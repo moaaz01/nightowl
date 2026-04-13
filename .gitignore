@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Reports & outputs (generated at runtime)
+workspace/reports/*.html
+workspace/reports/*.json
+workspace/reports/*.md
+workspace/decompiled/
+workspace/analysis/
+workspace/logs/
+
+# APKs & binaries (user drops targets/)
+targets/*.apk
+targets/*.xapk
+
+# Decompilation output (generated at runtime)
+decompiled/
+jadx-src/
+apktool/
+
+# Binary tools (downloaded by install scripts)
+tools/jadx/
+tools/apktool.jar
+tools/apktool
+tools/dex2jar/
+tools/ghidra/
+tools/frida-server/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# Old backups
+*.old
+
+# Generated reports (user-specific)
+reports/*.html
+reports/*.json
+reports/*.md
