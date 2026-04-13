@@ -222,6 +222,8 @@ Tests cover: validation, secret patterns, analyzer logic, scoring, report genera
 
 [MIT License](LICENSE) — Free for authorized security testing and research.
 
+> ⚠️ For authorized security testing only · للاختبار الأمني المرخص فقط
+
 ---
 
 <div align="center">
