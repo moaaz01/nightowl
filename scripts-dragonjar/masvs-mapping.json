@@ -1,0 +1,183 @@
+{
+  "masvs_version": "v2",
+  "controls": {
+    "MSTG-ARCH-1": {
+      "category": "Architecture",
+      "title": "Security Architecture Documentation",
+      "weight": 3,
+      "description": "App implements a security architecture and all security-related components are documented"
+    },
+    "MSTG-ARCH-2": {
+      "category": "Architecture",
+      "title": "Third-Party Libraries",
+      "weight": 2,
+      "description": "Third-party libraries are used according to security best practices"
+    },
+    "MSTG-CRYPTO-1": {
+      "category": "Cryptography",
+      "title": "Key Management",
+      "weight": 4,
+      "description": "App uses cryptographic primitives according to best practices"
+    },
+    "MSTG-CRYPTO-2": {
+      "category": "Cryptography",
+      "title": "Cryptographic Algorithms",
+      "weight": 4,
+      "description": "App does not rely on deprecated cryptographic algorithms"
+    },
+    "MSTG-CRYPTO-3": {
+      "category": "Cryptography",
+      "title": "Key Generation",
+      "weight": 4,
+      "description": "App performs key management operations properly"
+    },
+    "MSTG-AUTH-1": {
+      "category": "Authentication",
+      "title": "Local Authentication",
+      "weight": 4,
+      "description": "App uses biometric or passcode authentication for sensitive operations"
+    },
+    "MSTG-AUTH-2": {
+      "category": "Authentication",
+      "title": "Remote Authentication",
+      "weight": 4,
+      "description": "App implements secure remote authentication"
+    },
+    "MSTG-AUTH-3": {
+      "category": "Authentication",
+      "title": "Session Management",
+      "weight": 3,
+      "description": "App implements secure session management"
+    },
+    "MSTG-NET-1": {
+      "category": "Network",
+      "title": "Network Security",
+      "weight": 4,
+      "description": "App uses secure network communication (TLS)"
+    },
+    "MSTG-NET-2": {
+      "category": "Network",
+      "title": "Certificate Validation",
+      "weight": 4,
+      "description": "App properly validates TLS certificates"
+    },
+    "MSTG-NET-3": {
+      "category": "Network",
+      "title": "Data in Transit",
+      "weight": 3,
+      "description": "App protects data in transit from interception"
+    },
+    "MSTG-PLATFORM-1": {
+      "category": "Platform",
+      "title": "IPC Security",
+      "weight": 3,
+      "description": "App properly protects inter-process communication"
+    },
+    "MSTG-PLATFORM-2": {
+      "category": "Platform",
+      "title": "Context Handling",
+      "weight": 3,
+      "description": "App properly handles Android context objects"
+    },
+    "MSTG-PLATFORM-3": {
+      "category": "Platform",
+      "title": "WebView Security",
+      "weight": 4,
+      "description": "App secures WebView implementations"
+    },
+    "MSTG-STORAGE-1": {
+      "category": "Storage",
+      "title": "Sensitive Data Storage",
+      "weight": 4,
+      "description": "App protects sensitive data in storage"
+    },
+    "MSTG-STORAGE-2": {
+      "category": "Storage",
+      "title": "Keychain Usage",
+      "weight": 3,
+      "description": "App uses Android Keystore appropriately"
+    },
+    "MSTG-STORAGE-3": {
+      "category": "Storage",
+      "title": "SharedPreferences",
+      "weight": 2,
+      "description": "App properly configures SharedPreferences"
+    },
+    "MSTG-RESILIENCE-1": {
+      "category": "Resilience",
+      "title": "Code Obfuscation",
+      "weight": 2,
+      "description": "App implements code obfuscation"
+    },
+    "MSTG-RESILIENCE-2": {
+      "category": "Resilience",
+      "title": "Root Detection",
+      "weight": 3,
+      "description": "App implements root detection mechanisms"
+    },
+    "MSTG-RESILIENCE-3": {
+      "category": "Resilience",
+      "title": "Emulator Detection",
+      "weight": 2,
+      "description": "App implements emulator detection"
+    },
+    "MSTG-RESILIENCE-4": {
+      "category": "Resilience",
+      "title": "Debugging Detection",
+      "weight": 3,
+      "description": "App detects and responds to debugging attempts"
+    },
+    "MSTG-RESILIENCE-5": {
+      "category": "Resilience",
+      "title": "Tamper Detection",
+      "weight": 2,
+      "description": "App detects code tampering"
+    },
+    "MSTG-BINARY-1": {
+      "category": "Binary",
+      "title": "Native Code Security",
+      "weight": 3,
+      "description": "App properly secures native code components"
+    }
+  },
+  "category_weights": {
+    "Architecture": 1.0,
+    "Cryptography": 1.5,
+    "Authentication": 1.3,
+    "Network": 1.3,
+    "Platform": 1.0,
+    "Storage": 1.2,
+    "Resilience": 0.8,
+    "Binary": 0.7
+  },
+  "source_to_control_mapping": {
+    "grep": {
+      "webview_sinks": ["MSTG-PLATFORM-3"],
+      "ipc_sources": ["MSTG-PLATFORM-1"],
+      "secrets": ["MSTG-STORAGE-1", "MSTG-CRYPTO-1"],
+      "crypto_issues": ["MSTG-CRYPTO-2", "MSTG-CRYPTO-3"],
+      "insecure_storage": ["MSTG-STORAGE-1", "MSTG-STORAGE-3"],
+      "network_tls": ["MSTG-NET-1", "MSTG-NET-2"],
+      "native_bridges": ["MSTG-BINARY-1"]
+    },
+    "rasp": {
+      "rootbeer": ["MSTG-RESILIENCE-2"],
+      "safetynet": ["MSTG-RESILIENCE-2", "MSTG-RESILIENCE-3"],
+      "emulator": ["MSTG-RESILIENCE-3"],
+      "debug": ["MSTG-RESILIENCE-4"],
+      "frida_detect": ["MSTG-RESILIENCE-4"],
+      "screenshot": ["MSTG-PLATFORM-3"],
+      "screenrecorded": ["MSTG-PLATFORM-3"]
+    },
+    "semgrep": {
+      "hardcoded_secrets": ["MSTG-STORAGE-1", "MSTG-CRYPTO-1"],
+      "weak_crypto": ["MSTG-CRYPTO-2"],
+      "insecure_storage": ["MSTG-STORAGE-1", "MSTG-STORAGE-3"],
+      "ssl_pinning_bypass": ["MSTG-NET-2"],
+      "root_detection_bypass": ["MSTG-RESILIENCE-2"],
+      "webview_xss": ["MSTG-PLATFORM-3"],
+      "sql_injection": ["MSTG-PLATFORM-1"],
+      "intent_injection": ["MSTG-PLATFORM-1"]
+    }
+  }
+}

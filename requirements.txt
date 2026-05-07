@@ -1,0 +1,9 @@
+# NightOwl - Android APK Security Analyzer
+# Python >= 3.12 required
+
+# Core analysis
+androguard==4.1.3
+cryptography==46.0.5
+
+# Terminal UI
+rich==13.7.1

@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "description": "Authorized-lab RASP bypass profiles. DRY mapping from detected RASP families to existing Frida bypass scripts plus documented validation limits.",
+  "default_frida_args": [
+    "-U",
+    "--no-pause"
+  ],
+  "profiles": {
+    "rootbeer": {
+      "category": "root-detection",
+      "scripts": [
+        "assets/frida-scripts/root-detection-bypass.js",
+        "assets/frida-scripts/rasp-bypass.js"
+      ],
+      "validates": [
+        "RootBeer API checks",
+        "su/busybox file checks",
+        "root package checks",
+        "build tag checks"
+      ],
+      "limits": "Does not modify server-side risk scoring or remote attestation verdicts."
+    },
+    "safetynet": {
+      "category": "attestation",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/network-security-bypass.js",
+        "assets/frida-scripts/ssl-pinning-bypass.js"
+      ],
+      "validates": [
+        "legacy SafetyNet client calls",
+        "Play Integrity client-side call sites",
+        "TLS interception feasibility"
+      ],
+      "limits": "Client hooks can exercise failure handling and token transport, but cannot forge Google-backed server verdicts. Validate backend behavior with authorized test configuration."
+    },
+    "emulator": {
+      "category": "environment-detection",
+      "scripts": [
+        "assets/frida-scripts/root-detection-bypass.js",
+        "assets/frida-scripts/rasp-bypass.js"
+      ],
+      "validates": [
+        "Build property spoofing",
+        "goldfish/ranchu checks",
+        "emulator package checks"
+      ],
+      "limits": "Native-only emulator heuristics may require app-specific hooks after tracing."
+    },
+    "debug": {
+      "category": "debugger-detection",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js"
+      ],
+      "validates": [
+        "Debug.isDebuggerConnected",
+        "debuggable flag checks",
+        "ptrace-style checks where covered"
+      ],
+      "limits": "Kernel-level or vendor-native anti-debug may require target-specific native hooks."
+    },
+    "frida_detect": {
+      "category": "instrumentation-detection",
+      "scripts": [
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/android-anti-frida-countermeasures.js",
+        "assets/frida-scripts/rasp-bypass.js"
+      ],
+      "validates": [
+        "/proc maps filtering",
+        "Frida port checks",
+        "thread/module/string detection",
+        "common anti-Frida Java checks"
+      ],
+      "limits": "Highly customized native memory scanners may require a targeted hook generated from observed evidence."
+    },
+    "screenshot": {
+      "category": "screen-capture-protection",
+      "scripts": [
+        "assets/frida-scripts/flag-secure-bypass.js"
+      ],
+      "validates": [
+        "FLAG_SECURE removal",
+        "WindowManager addView hooks"
+      ],
+      "limits": "OEM-level DRM surfaces or media projection policy may remain protected."
+    },
+    "screenrecorded": {
+      "category": "screen-recording-protection",
+      "scripts": [
+        "assets/frida-scripts/flag-secure-bypass.js",
+        "assets/frida-scripts/mediaprojection-bypass.js"
+      ],
+      "validates": [
+        "screen recording callbacks",
+        "MediaProjection-related checks",
+        "FLAG_SECURE usage"
+      ],
+      "limits": "Platform/OEM DRM protections may remain non-bypassable in a generic script."
+    },
+    "talsec": {
+      "category": "commercial-rasp",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/root-detection-bypass.js"
+      ],
+      "validates": [
+        "freeRASP Java callback tampering",
+        "root/debug/emulator checks",
+        "Frida detection checks"
+      ],
+      "limits": "Use detector evidence to add target-specific hooks for custom ThreatListener implementations."
+    },
+    "approov": {
+      "category": "attestation",
+      "scripts": [
+        "assets/frida-scripts/network-security-bypass.js",
+        "assets/frida-scripts/ssl-pinning-bypass.js",
+        "assets/frida-scripts/network-interceptor-enhanced.js"
+      ],
+      "validates": [
+        "client SDK integration points",
+        "token transport visibility",
+        "TLS interception feasibility"
+      ],
+      "limits": "Approov server-side token validation cannot be generically bypassed client-side. Use an authorized test tenant or backend allowlist for validation."
+    },
+    "dexguard": {
+      "category": "shielding-obfuscation",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/packer-unpacker.js"
+      ],
+      "validates": [
+        "anti-tamper signal handling",
+        "Frida detection",
+        "packing/unpacking triage"
+      ],
+      "limits": "DexGuard native checks are version/app specific; use traces to add precise hooks."
+    },
+    "appdome": {
+      "category": "commercial-shielding",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/root-detection-bypass.js"
+      ],
+      "validates": [
+        "root/debug/emulator callbacks",
+        "anti-instrumentation checks",
+        "generic shielding signals"
+      ],
+      "limits": "Generated Appdome protections vary per build; inspect detector evidence before claiming bypass."
+    },
+    "doverunner": {
+      "category": "commercial-shielding",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/root-detection-bypass.js"
+      ],
+      "validates": [
+        "AppSealing/Doverunner root/debug/instrumentation checks",
+        "generic hardening callbacks"
+      ],
+      "limits": "Native library checks may require targeted app-specific hooks."
+    },
+    "digitalai": {
+      "category": "commercial-hardening",
+      "scripts": [
+        "assets/frida-scripts/rasp-bypass.js",
+        "assets/frida-scripts/anti-frida-bypass.js",
+        "assets/frida-scripts/packer-unpacker.js"
+      ],
+      "validates": [
+        "Arxan/Digital.ai tamper and instrumentation checks",
+        "anti-Frida checks",
+        "packing triage"
+      ],
+      "limits": "Native control-flow and checksum protections usually need app-specific dynamic analysis."
+    }
+  }
+}

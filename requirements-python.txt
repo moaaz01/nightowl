@@ -1,0 +1,61 @@
+# NightOwl Android RE Toolkit - Python Dependencies
+# Install with: pip install -r requirements.txt
+# Pinned versions — tested and verified working
+# Last updated: 2026-04-13
+
+# ═══════════════════════════════════════════════════════════
+# Core (required by nightowl.py)
+# ═══════════════════════════════════════════════════════════
+androguard==3.4.0a1     # APK parsing (v3 API: androguard.core.bytecodes.apk) — pinned to actual installed version
+rich==14.3.4             # Terminal TUI output
+
+# ═══════════════════════════════════════════════════════════
+# APK Analysis
+# ═══════════════════════════════════════════════════════════
+apkid==3.1.0             # APK identifier (packer/compiler detection)
+quark-engine==26.3.1     # Android malware scoring
+
+# ═══════════════════════════════════════════════════════════
+# Dynamic Instrumentation
+# ═══════════════════════════════════════════════════════════
+frida==17.9.1            # Dynamic instrumentation
+frida-tools==14.8.1      # Frida CLI tools
+objection==1.12.4        # Mobile exploration framework
+
+# ═══════════════════════════════════════════════════════════
+# Binary Analysis
+# ═══════════════════════════════════════════════════════════
+capstone==5.0.7          # Disassembly engine
+lief==0.17.6             # Binary parsing (ELF, PE, Mach-O)
+pyelftools==0.32         # ELF file parsing
+
+# ═══════════════════════════════════════════════════════════
+# Security & Crypto
+# ═══════════════════════════════════════════════════════════
+pycryptodome==3.23.0     # Cryptographic operations
+cryptography==46.0.7     # TLS/SSL certificate handling
+paramiko==4.0.0          # SSH for remote testing
+bcrypt==5.0.0            # Password hashing
+
+# ═══════════════════════════════════════════════════════════
+# Utilities
+# ═══════════════════════════════════════════════════════════
+requests==2.33.1         # HTTP client
+pyyaml==6.0.3            # YAML parsing
+tabulate==0.10.0         # Table formatting
+r2pipe==1.8.0            # radare2 Python bindings
+lxml==6.0.3              # XML parsing
+loguru==0.7.3            # Logging
+networkx==3.6.1          # Graph analysis
+matplotlib==3.10.8       # Chart generation
+
+# ═══════════════════════════════════════════════════════════
+# OLE / Office File Analysis
+# ═══════════════════════════════════════════════════════════
+oletools==0.60.2         # OLE file analysis
+msoffcrypto-tool==6.0.0  # Office decryption
+
+# ═══════════════════════════════════════════════════════════
+# Development (optional)
+# ═══════════════════════════════════════════════════════════
+ipython==9.12.0          # Interactive Python shell
