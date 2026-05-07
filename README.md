@@ -4,7 +4,7 @@
 
 ### Unified Android Security Analysis Platform
 
-**Static + Dynamic Analysis · OWASP MSTG Aligned · Agent-Ready**
+**Static Analysis · Framework Detection · RASP Assessment · Automated Bypass · Agent-Ready**
 
 [![Release](https://img.shields.io/github/v/release/moaaz01/nightowl?label=release&color=blue)](https://github.com/moaaz01/nightowl/releases)
 [![Python](https://img.shields.io/badge/python-3.12+-green.svg)](https://python.org)
@@ -15,27 +15,36 @@
 
 ---
 
-**NightOwl** is a unified Android security analysis platform that integrates static analysis, framework detection, runtime defense assessment, and automated bypass generation — all from a single command. Designed for security researchers, penetration testers, and AI agents.
+**NightOwl** is a unified Android security analysis platform that combines deep static analysis, framework detection, runtime defense assessment, and automated bypass generation into a single command-line interface. Designed for security researchers, penetration testers, and AI agents.
 
-## ✨ Key Features
+---
+
+## Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **9-Section Analysis** | Info, Permissions, URLs, Secrets, Architecture, Vulnerabilities, Manifest, APIs, Decompilation |
-| **Native .so Scanning** | Extracts strings from `libapp.so`, `libflutter.so`, and other native libs (Flutter/RN support) |
+| **9-Section APK Analysis** | Info, Permissions, URLs, Secrets, Architecture, Vulnerabilities, Manifest, APIs, Decompilation |
+| **DragonJAR Static Audit** | Full static analysis pipeline with jadx, apktool, ripgrep, and strings |
+| **Framework Detection** | Automatic Flutter, React Native, Cordova, and Unity analysis |
+| **RASP Defense Detection** | Identifies RootBeer, Frida Detection, SafetyNet, Talsec, and 10+ runtime defense mechanisms |
+| **Frida Bypass Generation** | Auto-generates optimized bypass scripts per detection profile |
+| **Semgrep MASTG Scanning** | OWASP MASVS-aligned rules for automated compliance scanning |
+| **CVSS v3.1 Scoring** | Automated severity scoring with grade assignment |
 | **55+ Secret Patterns** | AWS, GCP, Stripe, PayPal, Telegram, JWT, Firebase, SSH keys, and more |
-| **Shannon Entropy Filter** | Real entropy calculation to eliminate binary noise false positives |
-| **Security Scoring** | Weighted category scoring with letter grades (A+ → F) and OWASP-aligned risk levels |
-| **Deep Link Analysis** | Detects unverified App Links, HTTP deep links, and autoVerify status |
-| **Certificate Inspection** | Signing certificate details, expiry warnings, key strength checks |
-| **HTML + MD + JSON Reports** | Interactive tabbed HTML, Markdown, and machine-readable JSON output |
-| **Frida Scripts** | 4 ready-made scripts: API interceptor, SSL bypass, memory dump, hooks |
+| **Shannon Entropy Filter** | Entropy-based false positive elimination from binary noise |
+| **Native .so Extraction** | String extraction from libapp.so, libflutter.so, and other native libraries |
+| **Security Scoring** | Weighted category scoring with letter grades (A+ through F) |
+| **HTML + MD + JSON Reports** | Interactive tabbed HTML, Markdown, and machine-readable JSON |
+| **Interactive Wizard** | Guided mode with 12 scan types when run without arguments |
+| **Preflight Check** | Validates 15 system tools and 4 Python packages |
 | **Batch Scanning** | Scan entire directories of APKs at once |
-| **Agent Integration** | Full SKILL.md for AI agent use — structured JSON output, jq examples |
+| **Agent Integration** | Full SKILL.md for AI agent use with structured JSON output |
 
-## 📦 Installation
+---
 
-### Quick Install
+## Installation
+
+### Quick Start
 
 ```bash
 git clone https://github.com/moaaz01/nightowl.git
@@ -47,187 +56,227 @@ source env.sh
 ### Manual Setup
 
 ```bash
-# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Install binary tools (jadx, dex2jar, radare2)
 bash scripts/install-ultimate.sh
 ```
 
 ### Requirements
 
 - **Python 3.12+**
-- **Java JDK 8+** (for jadx/apktool)
+- **Java JDK 8+** (for jadx, apktool)
 - **Android SDK** (adb)
-- See [requirements.txt](requirements.txt) for Python packages
+- See [requirements.txt](requirements.txt) for full Python dependencies
 
-## 🚀 Usage
+---
 
-### Static Analysis Commands
+## Usage
+
+### Quick Start
 
 ```bash
-# Full 9-section analysis (recommended)
-nightowl full app.apk
+# Interactive wizard — guided menu
+./nightowl
 
-# Individual sections
-nightowl info app.apk          # Basic info & hashes
-nightowl perms app.apk        # Permission risk analysis
-nightowl urls app.apk         # URLs, endpoints, servers
-nightowl secrets app.apk      # API keys, tokens, passwords
-nightowl arch app.apk         # Frameworks & libraries
-nightowl vulns app.apk        # Security score & vulnerabilities
-nightowl manifest app.apk     # Components & activities
-nightowl apis app.apk         # Fast API/endpoint extraction
-nightowl decompile app.apk    # Full decompile: jadx + apktool + native
+# Full security scan
+./nightowl full app.apk
 
-# Batch scan all APKs in targets/
-nightowl scan
+# Preflight dependency check
+./nightowl preflight
+```
 
-# Usage guide
-nightowl guide
+### Full Command Reference
+
+#### Core APK Analysis
+
+```bash
+./nightowl full app.apk          # Complete 8-section analysis
+./nightowl quick app.apk         # Fast scan (analysis only, minimal rendering)
+./nightowl info app.apk          # Package info, version, SDK levels, hashes
+./nightowl perms app.apk         # Permission risk analysis
+./nightowl urls app.apk          # URLs, endpoints, server domains, IPs
+./nightowl secrets app.apk       # API keys, tokens, passwords, private keys
+./nightowl vulns app.apk         # Security score and vulnerability assessment
+./nightowl manifest app.apk      # Activities, services, receivers, providers
+./nightowl apis app.apk          # Fast API endpoint extraction
+./nightowl decompile app.apk     # Full decompilation (jadx + apktool)
+./nightowl scan [directory]      # Batch scan all APKs in a directory
+```
+
+#### DragonJAR Security Modules
+
+```bash
+./nightowl static-audit app.apk          # Full DragonJAR static audit
+./nightowl static-audit app.apk --reuse-jadx /path  # Reuse existing decompilation
+./nightowl semgrep app.apk               # OWASP MASTG compliance scanning
+./nightowl semgrep app.apk --reuse-jadx /path       # Reuse decompilation
+./nightowl rasp app.apk [package]        # Runtime Application Self-Protection detection
+./nightowl bypass <package> [detector_ids]           # Generate Frida bypass scripts
+./nightowl preflight                     # Validate all system dependencies
+```
+
+#### Framework-Specific Analysis
+
+```bash
+./nightowl flutter app.apk         # Flutter security analysis
+./nightowl react-native app.apk    # React Native security analysis
+./nightowl cordova app.apk         # Cordova security analysis
+./nightowl unity app.apk           # Unity security analysis
+```
+
+#### Utilities
+
+```bash
+./nightowl cvss findings.json      # CVSS v3.1 severity scoring
+./nightowl guide                   # Full usage documentation
+./nightowl proxy                   # Network proxy configuration
 ```
 
 ### Output Flags
 
 ```bash
-nightowl full app.apk --json          # JSON only (for scripting & agents)
-nightowl full app.apk --save         # Save HTML + MD + JSON reports
-nightowl full app.apk --lang ar      # Arabic report translations
-nightowl full app.apk --report-dir ./output  # Custom output directory
+./nightowl full app.apk --json           # Machine-readable JSON (agent-ready)
+./nightowl full app.apk --save           # Save HTML + MD + JSON reports
+./nightowl full app.apk --lang ar        # Arabic report translations
+./nightowl full app.apk --report-dir ./output  # Custom output directory
 ```
 
-### Dynamic Analysis (requires rooted device)
+### Dynamic Analysis (requires rooted Android device)
 
 ```bash
-# 1. Load environment
 source env.sh
 
-# 2. Deploy Frida server to device
-frida-deploy
-
-# 3. Intercept API traffic + SSL bypass
-frida-intercept com.app -l frida-scripts/api-interceptor.js
-
-# 4. Dedicated SSL pinning bypass
-frida -f com.app -l frida-scripts/ssl-bypass.js --no-pause
-
-# 5. Memory analysis & secret scanning
-frida -f com.app -l frida-scripts/memory-dump.js --no-pause
-
-# 6. Interactive objection shell
-obj com.app
+frida-deploy                              # Deploy Frida server to device
+frida-intercept com.app -l frida-scripts/api-interceptor.js    # API traffic capture
+frida -f com.app -l frida-scripts/ssl-bypass.js --no-pause     # SSL pinning bypass
+frida -f com.app -l frida-scripts/memory-dump.js --no-pause    # Memory analysis
+obj com.app                               # Objection interactive shell
 ```
 
-## 📊 Analysis Sections
+---
 
-| # | Section | What It Detects |
-|---|---------|----------------|
-| 1 | **Info** | Package name, version, SDK levels, hashes (MD5/SHA1/SHA256), file size |
-| 2 | **Permissions** | Dangerous/normal permissions with risk levels and descriptions |
-| 3 | **URLs** | All URLs, API endpoints, server domains, IP addresses |
-| 4 | **Secrets** | 55+ patterns: API keys, tokens, passwords, private keys, cloud credentials |
-| 5 | **Architecture** | Frameworks (Flutter, React Native, Unity), native libraries, packer detection |
-| 6 | **Vulnerabilities** | Security score with category weights, debug flags, backup enabled, cleartext traffic |
-| 7 | **Manifest** | Activities, services, receivers, providers, exported components, deep links |
-| 8 | **APIs** | Retrofit/OkHttp/Volley endpoints, URL path patterns, HTTP methods |
-| 9 | **Decompile** | jadx source + apktool resources + native .so string extraction |
+## Analysis Capabilities
 
-## 🔐 Secret Detection Patterns
+### Core APK Analysis (9 Sections)
 
-NightOwl detects **55+ secret patterns** across these categories:
+| # | Section | Detects |
+|---|---------|---------|
+| 1 | Info | Package name, version, SDK levels, hashes, file metadata |
+| 2 | Permissions | Dangerous/normal permissions with risk assessment |
+| 3 | URLs | All URLs, API endpoints, server domains, IP addresses, emails |
+| 4 | Secrets | 55+ patterns: API keys, tokens, credentials, private keys |
+| 5 | Architecture | Frameworks (Flutter, React Native, Unity), native libraries, packers |
+| 6 | Vulnerabilities | Security score, debug flags, backup, cleartext traffic |
+| 7 | Manifest | Activities, services, receivers, providers, exported components |
+| 8 | APIs | Retrofit/OkHttp/Volley endpoints, URL patterns, HTTP methods |
+| 9 | Decompile | jadx source, apktool resources, native .so string extraction |
+
+### DragonJAR Security Audit
+
+| Module | Function |
+|--------|----------|
+| Static Audit | Full static analysis using jadx decompilation, apktool resource extraction, ripgrep pattern matching, and strings analysis |
+| Framework Analysis | Automated detection and analysis of Flutter, React Native, Cordova, and Unity applications |
+| RASP Detection | Identifies 10+ runtime defense mechanisms: RootBeer, Frida hooks, SafetyNet, Talsec, DexGuard, emulator checks, debug detection, SSL pinning |
+| Bypass Generation | Generates optimized Frida scripts per detection profile with combined bypass option |
+| Semgrep Scanner | Runs OWASP MASTG-aligned rules against decompiled source for compliance validation |
+| CVSS Scoring | Automated CVSS v3.1 base score calculation with severity grade assignment |
+
+### Secret Detection (55+ Patterns)
 
 | Category | Examples |
 |----------|---------|
-| **Cloud** | AWS Access Key (`AKIA...`), GCP API Key, Azure Credential |
-| **Payments** | Stripe (`sk_live_`, `pk_live_`), PayPal, Square |
-| **Messaging** | Telegram Bot Token, Discord Bot Token, Slack Webhook |
-| **Auth** | JWT (`eyJ...`), Bearer Token, Basic Auth |
-| **Database** | PostgreSQL/MySQL/MongoDB URIs, Redis URL |
-| **DevOps** | GitHub Token (`ghp_`), GitLab Token, Heroku API Key |
-| **Social** | Twitter/Facebook/LinkedIn API keys |
-| **SSH** | Private keys (`-----BEGIN RSA`), SSH config patterns |
-| **Mobile** | Firebase (`AIzaSy...`), SendGrid, Twilio SID |
+| Cloud | AWS Access Key (AKIA), GCP API Key, Azure Credential |
+| Payments | Stripe (sk_live_, pk_live_), PayPal, Square |
+| Messaging | Telegram Bot Token, Discord Bot Token, Slack Webhook |
+| Auth | JWT (eyJ), Bearer Token, Basic Auth |
+| Database | PostgreSQL, MySQL, MongoDB URIs, Redis URL |
+| DevOps | GitHub Token (ghp_), GitLab Token, Heroku API Key |
+| Social | Twitter, Facebook, LinkedIn API keys |
+| SSH | Private keys (-----BEGIN RSA), SSH config patterns |
+| Mobile | Firebase (AIzaSy), SendGrid, Twilio SID |
 
-Each pattern includes a **description**, **risk level** (critical/high/medium/low), and **entropy validation** to reduce false positives.
+Each pattern includes description, risk level (critical/high/medium/low), and entropy validation to minimize false positives.
 
-## 📁 Project Structure
+---
+
+## Project Structure
 
 ```
 nightowl/
-├── nightowl.py              # Main analyzer (single-file, portable)
-├── env.sh                   # Environment setup (auto-generated)
-├── requirements.txt          # Python dependencies
-├── requirements-python.txt  # Detailed Python packages (pinned)
-├── LICENSE                  # MIT License
-├── AGENTS.md                # AI agent integration guide
-├── README.md                # This file
-├── frida-scripts/
-│   ├── api-interceptor.js   # HTTP/HTTPS traffic capture
-│   ├── ssl-bypass.js        # SSL pinning bypass
-│   ├── memory-dump.js       # Memory scanning & secrets
-│   └── hooks.js             # Crypto, auth, root detection hooks
-├── androguard-scripts/
-│   ├── analyze.py            # Androguard CLI wrapper
-│   ├── extract-strings.py   # String extraction
-│   └── find-permissions.py  # Permission finder
-├── scripts/
-│   ├── install-ultimate.sh  # Full dependency installer
-│   ├── install-all.sh        # Alternative installer
-│   ├── smart-update.sh      # Incremental update script
-│   └── network-setup.sh    # Network/proxy configuration
-├── skills/nightowl/
-│   └── SKILL.md             # AI agent skill definition
-├── tests/
-│   ├── test_nightowl.py     # 49 unit tests
-│   ├── create_test_apk.py   # Test APK generator
-│   └── __init__.py
+├── nightowl                  # Unified entry point (24 commands + wizard)
+├── nightowl.py               # Core analysis engine
+├── nwcore.py                 # Legacy nwcore package (compatibility)
+├── nightowl_pkg/             # Modular analysis package
+│   ├── core.py              # NightOwl engine — re-exports original analyzer
+│   ├── dragonjar.py         # StaticAuditor, SemgrepScanner, CVSScorer
+│   ├── frameworks.py        # Flutter, React Native, Cordova, Unity analyzers
+│   ├── runtime.py           # RASPAnalyzer, BypassRunner (Frida scripts)
+│   ├── preflight.py         # PreflightChecker (15 tools + 4 packages)
+│   └── wizard.py            # Interactive wizard (12 scan modes)
+├── scripts-dragonjar/       # DragonJAR reference scripts and rules
+│   ├── semgrep-rules/       # OWASP MASTG compliance rules
+│   ├── bypass-profiles.json # Frida bypass profile definitions
+│   ├── detector-catalog.json # RASP detector catalog
+│   └── masvs-mapping.json   # OWASP MASTG control mappings
+├── frida-scripts/           # Ready-to-use Frida scripts
+│   ├── api-interceptor.js
+│   ├── ssl-bypass.js
+│   ├── memory-dump.js
+│   └── hooks.js
+├── androguard-scripts/      # Androguard CLI wrappers
+├── scripts/                 # Setup and utility scripts
+├── skills/nightowl/         # AI agent skill definition
+├── tests/                   # Unit tests
 └── tools/                   # Binary tools (installed by scripts)
-    ├── jadx/                # Java decompiler
-    ├── dex2jar/             # DEX to JAR converter
-    └── ghidra/              # Reverse engineering suite
+    ├── jadx/
+    ├── dex2jar/
+    └── ghidra/
 ```
 
-## 🤖 AI Agent Integration
+---
 
-NightOwl is designed for agent-driven security analysis. The [SKILL.md](skills/nightowl/SKILL.md) and [AGENTS.md](AGENTS.md) provide complete integration guides.
+## AI Agent Integration
+
+NightOwl provides structured JSON output designed for AI agent consumption. See [SKILL.md](skills/nightowl/SKILL.md) and [AGENTS.md](AGENTS.md) for complete integration guides.
 
 ```bash
-# JSON output for agents
-nightowl full app.apk --json
+# Structured JSON output
+./nightowl full app.apk --json
 
-# Parse with jq
-nightowl secrets app.apk --json | jq '.secrets.critical[]'
+# Query specific findings
+./nightowl secrets app.apk --json | jq '.secrets.critical[]'
 
-# Batch process
-nightowl scan --json | jq '.[] | select(.grade == "F")'
+# Batch analysis
+./nightowl scan --json | jq '.[] | select(.grade == "F")'
+
+# Dependency validation
+./nightowl preflight --json
 ```
 
-## 🧪 Testing
+---
+
+## Testing
 
 ```bash
-# Run all 49 tests
 python -m pytest tests/ -v
-
-# Or directly
-python tests/test_nightowl.py
 ```
 
-Tests cover: validation, secret patterns, analyzer logic, scoring, report generation, and constants.
+Tests cover: APK validation, secret pattern detection, analyzer logic, security scoring, report generation, and configuration constants.
 
-## 📜 License
+---
+
+## License
 
 [MIT License](LICENSE) — Free for authorized security testing and research.
 
-> ⚠️ For authorized security testing only · للاختبار الأمني المرخص فقط
+> For authorized security testing only
 
 ---
 
 <div align="center">
 
-**🦉 Built for security researchers who demand depth.**
+**Built for security researchers who demand depth.**
 
 </div>
