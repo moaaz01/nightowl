@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""
+NightOwl v6.0 — Unified Android Security Suite
+Usage: nightowl <command> [args]
+
+Main commands:
+  interactive          Interactive wizard (or just 'nightowl')
+  full <apk>           Full security scan
+  quick <apk>          Quick scan
+  info <apk>           Basic APK info
+  perms <apk>          Permissions analysis
+  urls <apk>           URLs & endpoints
+  secrets <apk>        Secrets detection
+  vulns <apk>          Vulnerabilities
+  manifest <apk>       Manifest components
+  apis <apk>           API endpoint extraction
+  decompile <apk>      Full decompilation
+  scan [dir]           Batch scan
+
+  static-audit <apk>   Full DragonJAR static audit
+  flutter <apk>        Flutter analysis
+  react-native <apk>   React Native analysis
+  cordova <apk>        Cordova analysis
+  unity <apk>          Unity analysis
+  semgrep <apk>        Semgrep MASTG scan
+  rasp <apk>           RASP detection
+  bypass <pkg>         Generate Frida bypass scripts
+  cvss <findings.json> CVSS scoring
+  preflight            Dependency check
+  guide                Usage guide
+  proxy                Network proxy setup
+"""
+
+import os, sys, json, contextlib
+import logging
+logging.disable(logging.CRITICAL)
+
+from pathlib import Path
+
+_SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPT_DIR))
+
+# Silence loguru-based logging (androguard uses loguru internally)
+try:
+    from loguru import logger as _loguru_logger
+    _loguru_logger.remove()
+    _loguru_logger.disable('androguard')
+except ImportError:
+    pass
+
+from nightowl_pkg import core as nw
+from nightowl_pkg import dragonjar as dj
+from nightowl_pkg import frameworks as fw
+from nightowl_pkg import runtime as rt
+from nightowl_pkg import preflight as pf
+from nightowl_pkg import wizard as wz
+
+# Suppress the original v5.0 show_banner
+nw.show_banner = lambda: None
+
+RICH = nw.RICH
+con = nw.con if RICH else None
+
+BANNER_SHOWN = False
+
+def show_banner():
+    global BANNER_SHOWN
+    if BANNER_SHOWN:
+        return
+    BANNER_SHOWN = True
+    banner = """
+         ╔══════════════════════════════════════════╗
+         ║     🦉 NightOwl v6.0 — Unified Suite    ║
+         ║  Android Security Analysis — All in One  ║
+         ╚══════════════════════════════════════════╝
+    """
+    if RICH:
+        con.print(f"[bold cyan]{banner}[/]")
+    else:
+        print(banner)
+
+# ─── Main CLI Dispatch ───────────────────────────────────────────────
+
+def main():
+    global BANNER_SHOWN
+    
+    # No args → interactive wizard
+    if len(sys.argv) < 2 or sys.argv[1] in ('interactive', 'wizard', 'menu', '-i'):
+        show_banner()
+        wz.interactive_wizard()
+        return
+    
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+    
+    # ── Internal / no APK commands ──
+    if cmd in ('guide', 'help', '--help', '-h'):
+        show_banner()
+        print(__doc__)
+        return
+    
+    if cmd == 'proxy':
+        show_banner()
+        nw.cmd_proxy()
+        return
+    
+    if cmd == 'preflight':
+        show_banner()
+        pf.cmd_preflight()
+        return
+    
+    if cmd == 'scan':
+        show_banner()
+        scan_dir = args[0] if args else None
+        nw.cmd_scan(scan_dir)
+        return
+    
+    if cmd == 'decompile':
+        show_banner()
+        if not args:
+            print("Usage: nightowl decompile <apk_path>")
+            return
+        nw.cmd_decompile(args[0])
+        return
+    
+    if cmd == 'apis':
+        show_banner()
+        if not args:
+            print("Usage: nightowl apis <apk_path>")
+            return
+        nw.cmd_apis(args[0])
+        return
+    
+    # ── DragonJAR commands ──
+    if cmd == 'cvss':
+        show_banner()
+        if not args:
+            print("Usage: nightowl cvss <findings.json>")
+            return
+        result = dj.cmd_cvss(args[0])
+        if RICH:
+            con.print(f"Score: [bold]{result.get('score')}[/] | Grade: [bold]{result.get('grade')}[/]")
+        else:
+            print(json.dumps(result, indent=2))
+        return
+    
+    if cmd in ('flutter', 'react-native', 'cordova', 'unity'):
+        show_banner()
+        if not args:
+            print(f"Usage: nightowl {cmd} <apk_path>")
+            return
+        result = fw.cmd_framework(cmd, args[0])
+        print(json.dumps(result, indent=2) if isinstance(result, dict) else str(result))
+        return
+    
+    if cmd == 'static-audit':
+        show_banner()
+        if not args:
+            print("Usage: nightowl static-audit <apk_path> [--reuse-jadx <dir>]")
+            return
+        reuse = None
+        if '--reuse-jadx' in args:
+            idx = args.index('--reuse-jadx')
+            reuse = args[idx+1] if idx+1 < len(args) else None
+        dj.cmd_static_audit(args[0], reuse_jadx=reuse)
+        return
+    
+    if cmd == 'semgrep':
+        show_banner()
+        if not args:
+            print("Usage: nightowl semgrep <apk_path> [--reuse-jadx <dir>]")
+            return
+        reuse = None
+        if '--reuse-jadx' in args:
+            idx = args.index('--reuse-jadx')
+            reuse = args[idx+1] if idx+1 < len(args) else None
+        dj.cmd_semgrep(args[0], reuse_jadx=reuse)
+        return
+    
+    if cmd == 'rasp':
+        show_banner()
+        if not args:
+            print("Usage: nightowl rasp <apk_path> [package_name]")
+            return
+        pkg = args[1] if len(args) > 1 else None
+        result = rt.cmd_rasp(args[0], pkg)
+        return
+    
+    if cmd == 'bypass':
+        show_banner()
+        if not args:
+            print("Usage: nightowl bypass <package_name> [detector_ids...]")
+            return
+        pkg = args[0]
+        detectors = args[1:] if len(args) > 1 else ['rootbeer', 'frida_detect', 'safety_net', 'debug_detect']
+        output_dir = None
+        if '--output' in detectors:
+            idx = detectors.index('--output')
+            output_dir = detectors[idx+1]
+            detectors = detectors[:idx]
+        result = rt.cmd_bypass(pkg, detector_ids=detectors, output_dir=output_dir)
+        return
+    
+    # ── Core NightOwl commands (need APK) ──
+    core_cmds = {'full', 'info', 'perms', 'urls', 'secrets', 'vulns', 'manifest', 'quick'}
+    
+    if cmd in core_cmds:
+        if not args:
+            print(f"Usage: nightowl {cmd} <apk_path>")
+            sys.exit(1)
+        
+        apk_path = _resolve_apk(args[0])
+        
+        # Parse flags
+        json_mode = '--json' in args
+        save_mode = '--save' in args
+        
+        show_banner()
+        az = nw.NightOwlAnalyzer(apk_path, lang='en')
+        
+        if cmd in ('full', 'quick'):
+            ok = az.run_full()
+            az.render('full')
+        elif cmd == 'info':
+            ok = az.run_section('info')
+            az.render('info')
+        elif cmd == 'perms':
+            ok = az.run_section('perms')
+            az.render('full')
+        elif cmd == 'urls':
+            ok = az.run_section('urls')
+            az.render('full')
+        elif cmd == 'secrets':
+            ok = az.run_section('secrets')
+            az.render('full')
+        elif cmd == 'vulns':
+            ok = az.run_section('vulns')
+            az.render('full')
+        elif cmd == 'manifest':
+            ok = az.run_section('manifest')
+            az.render('full')
+        
+        if json_mode:
+            print(json.dumps(az.d, indent=2, ensure_ascii=False))
+        if save_mode:
+            _save_report(az, cmd, apk_path)
+        
+        return 0 if ok else 1
+    
+    # ── Unknown but looks like an APK path → full scan ──
+    if cmd.endswith('.apk'):
+        show_banner()
+        apk_path = _resolve_apk(cmd)
+        az = nw.NightOwlAnalyzer(apk_path, lang='en')
+        ok = az.run_full()
+        return 0 if ok else 1
+    
+    # ── Unknown command ──
+    print(f"Unknown command: {cmd}")
+    print("Try 'nightowl guide' for help")
+    sys.exit(1)
+
+
+def _resolve_apk(path):
+    p = Path(path)
+    if p.exists():
+        return str(p.resolve())
+    targets = _SCRIPT_DIR / 'targets'
+    for ext in ('', '.apk'):
+        candidate = targets / (path + ext)
+        if candidate.exists():
+            return str(candidate.resolve())
+    if targets.exists():
+        apks = list(targets.glob('*.apk'))
+        if apks:
+            return str(apks[0].resolve())
+    return path
+
+
+def _save_report(az, cmd, apk_path):
+    reports_dir = _SCRIPT_DIR / 'workspace' / 'reports'
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    apk_name = Path(apk_path).stem
+    report_file = reports_dir / f"{apk_name}-{cmd}.json"
+    report_file.write_text(json.dumps(az.d, indent=2, ensure_ascii=False))
+    if RICH:
+        con.print(f"[dim]Report saved: {report_file}[/]")
+    else:
+        print(f"Report saved: {report_file}")
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+        sys.exit(130)
+    except Exception as e:
+        if RICH:
+            con.print(f"[red]Error:[/] {e}")
+        else:
+            print(f"Error: {e}")
+        if '-v' in sys.argv or '--verbose' in sys.argv:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)

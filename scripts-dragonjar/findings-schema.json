@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Runtime Defense Analysis Finding",
+  "description": "RDA-specific view of the canonical Android Pentesting finding schema. Keep shared fields in references/schemas/finding.schema.json.",
+  "allOf": [
+    {
+      "$ref": "../../references/schemas/finding.schema.json"
+    }
+  ],
+  "properties": {
+    "source": {
+      "const": "rasp"
+    },
+    "detector": {
+      "type": "string",
+      "description": "RASP detector name that generated this finding"
+    },
+    "triggered": {
+      "type": "boolean",
+      "description": "Whether the detector triggered"
+    },
+    "bypass_available": {
+      "type": "boolean",
+      "description": "Whether an authorized validation/bypass profile is available"
+    }
+  }
+}

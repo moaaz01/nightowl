@@ -1,0 +1,186 @@
+{
+  "masvs_version": "v2",
+  "last_updated": "2026-05-04",
+  "status_values": ["not-tested", "covered-pass", "covered-fail", "not-applicable", "needs-dynamic-confirmation"],
+  "categories": [
+    {
+      "name": "Architecture",
+"controls": [
+          {
+            "id": "MSTG-ARCH-1",
+            "title": "Security Architecture Documentation",
+            "description": "App implements a security architecture and all security-related components are documented",
+            "status": "not-tested"
+          },
+          {
+            "id": "MSTG-ARCH-2",
+            "title": "Third-Party Libraries",
+            "description": "Third-party libraries are used according to security best practices",
+            "status": "not-tested"
+          }
+        ]
+    },
+    {
+      "name": "Cryptography",
+      "controls": [
+        {
+          "id": "MSTG-CRYPTO-1",
+          "title": "Key Management",
+          "description": "App uses cryptographic primitives according to best practices",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-CRYPTO-2",
+          "title": "Cryptographic Algorithms",
+          "description": "App does not rely on deprecated cryptographic algorithms",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-CRYPTO-3",
+          "title": "Key Generation",
+          "description": "App performs key management operations properly",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "controls": [
+        {
+          "id": "MSTG-AUTH-1",
+          "title": "Local Authentication",
+          "description": "App uses biometric or passcode authentication for sensitive operations",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-AUTH-2",
+          "title": "Remote Authentication",
+          "description": "App implements secure remote authentication",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-AUTH-3",
+          "title": "Session Management",
+          "description": "App implements secure session management",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Network",
+      "controls": [
+        {
+          "id": "MSTG-NET-1",
+          "title": "Network Security",
+          "description": "App uses secure network communication (TLS)",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-NET-2",
+          "title": "Certificate Validation",
+          "description": "App properly validates TLS certificates",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-NET-3",
+          "title": "Data in Transit",
+          "description": "App protects data in transit from interception",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Platform",
+      "controls": [
+        {
+          "id": "MSTG-PLATFORM-1",
+          "title": "IPC Security",
+          "description": "App properly protects inter-process communication",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-PLATFORM-2",
+          "title": "Context Handling",
+          "description": "App properly handles Android context objects",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-PLATFORM-3",
+          "title": "WebView Security",
+          "description": "App secures WebView implementations",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Resilience",
+      "controls": [
+        {
+          "id": "MSTG-RESILIENCE-1",
+          "title": "Code Obfuscation",
+          "description": "App implements code obfuscation",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-RESILIENCE-2",
+          "title": "Root Detection",
+          "description": "App implements root detection mechanisms",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-RESILIENCE-3",
+          "title": "Emulator Detection",
+          "description": "App implements emulator detection",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-RESILIENCE-4",
+          "title": "Debugging Detection",
+          "description": "App detects and responds to debugging attempts",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-RESILIENCE-5",
+          "title": "Tamper Detection",
+          "description": "App detects code tampering",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Storage",
+      "controls": [
+        {
+          "id": "MSTG-STORAGE-1",
+          "title": "Sensitive Data Storage",
+          "description": "App protects sensitive data in storage",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-STORAGE-2",
+          "title": "Keychain Usage",
+          "description": "App uses Android Keystore appropriately",
+          "status": "not-tested"
+        },
+        {
+          "id": "MSTG-STORAGE-3",
+          "title": "SharedPreferences",
+          "description": "App properly configures SharedPreferences",
+          "status": "not-tested"
+        }
+      ]
+    },
+    {
+      "name": "Binary",
+      "controls": [
+        {
+          "id": "MSTG-BINARY-1",
+          "title": "Native Code Security",
+          "description": "App properly secures native code components",
+          "status": "not-tested"
+        }
+      ]
+    }
+  ],
+  "total_controls": 24
+}

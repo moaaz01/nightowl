@@ -60,3 +60,9 @@ htmlcov/
 reports/*.html
 reports/*.json
 reports/*.md
+# Frida scripts (external)
+frida-scripts/
+
+# Binary tools
+apktool.jar
+*.jar

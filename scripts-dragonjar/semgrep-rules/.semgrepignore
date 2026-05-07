@@ -1,0 +1,24 @@
+# Semgrep ignore patterns for library and build artifacts
+# Exclude namespaces that produce false positives
+
+# Android framework and support libraries
+libs/
+vendor/
+build/
+.gradle/
+.idea/
+*.min.js
+*.min.css
+
+# Third-party node modules
+node_modules/
+
+# Test files
+*test*.js
+*spec*.js
+__tests__/
+
+# Mock data
+*mocks*
+*fixtures*
+*mockData*

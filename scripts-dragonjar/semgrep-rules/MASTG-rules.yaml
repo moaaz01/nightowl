@@ -1,0 +1,1174 @@
+# MASTG Semgrep Rules Bundle
+# Organized by OWASP MASTG categories
+# Version: 1.0
+
+rules:
+  # =============================================================================
+  # MASTG-CRYPTO: Cryptographic Issues
+  # =============================================================================
+  - id: MASTG-CRYPTO-001
+    pattern: |
+      $CIPHER = Cipher.getInstance("AES/ECB")
+    message: |
+      ECB mode is insecure for AES encryption. Use GCM or CBC with proper IV.
+    severity: ERROR
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-CRYPTO-002
+    pattern: |
+      $CIPHER = Cipher.getInstance("DES/...")
+    message: |
+      DES is a deprecated cipher. Use AES with at least 128-bit keys.
+    severity: ERROR
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-CRYPTO-003
+    pattern: |
+      MessageDigest.getInstance("MD5")
+    message: |
+      MD5 is a broken hash function. Use SHA-256 or stronger.
+    severity: ERROR
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-CRYPTO-004
+    pattern: |
+      MessageDigest.getInstance("SHA1")
+    message: |
+      SHA-1 is deprecated. Use SHA-256 or stronger.
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-005
+    pattern: |
+      SecretKeySpec($KEY, "AES")
+    message: |
+      Hardcoded AES key detected. Keys should be generated dynamically or stored in Keystore.
+    severity: ERROR
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-321
+      masvs_control: MSTG-CRYPTO-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "9.1"
+
+  - id: MASTG-CRYPTO-006
+    pattern: |
+      SecureRandom()
+    message: |
+      Verify SecureRandom is seeded properly. Consider using java.security.SecureRandom
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-338
+      masvs_control: MSTG-CRYPTO-3
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-007
+    pattern: |
+      $PASSWORD.equals(...)
+    message: |
+      String comparison for passwords may leak timing information. Use constant-time comparison.
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-521
+      masvs_control: MSTG-AUTH-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-008
+    pattern: |
+      "AES/ECB/PKCS5Padding"
+    message: |
+      ECB mode with PKCS5Padding is insecure. Use GCM mode for authenticated encryption.
+    severity: ERROR
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "7.5"
+
+  # =============================================================================
+  # MASTG-AUTH: Authentication Issues
+  # =============================================================================
+  - id: MASTG-AUTH-001
+    pattern: |
+      SharedPreferences.putString(...)
+    message: |
+      Sensitive data stored in SharedPreferences without encryption. Use EncryptedSharedPreferences.
+    severity: WARNING
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-AUTH-002
+    pattern: |
+      MODE_WORLD_READABLE
+    message: |
+      MODE_WORLD_READABLE allows other apps to read the data. Use private mode.
+    severity: ERROR
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-3
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-AUTH-003
+    pattern: |
+      MODE_WORLD_WRITABLE
+    message: |
+      MODE_WORLD_WRITABLE is a security risk. Use private mode.
+    severity: ERROR
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-3
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-AUTH-004
+    pattern: |
+      getPreferences().getString($KEY, ...)
+    message: |
+      Check if $KEY contains sensitive data that should not be in preferences.
+    severity: WARNING
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-3
+      owasp_category: M1-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-AUTH-005
+    pattern: |
+      BiometricPrompt.Builder
+    message: |
+      Biometric authentication detected. Ensure proper negative button handling and fallback.
+    severity: INFO
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-287
+      masvs_control: MSTG-AUTH-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-AUTH-006
+    pattern: |
+      FLAG_SECURE
+    message: |
+      FLAG_SECURE prevents screenshots in sensitive screens. Good practice for auth flows.
+    severity: INFO
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-200
+      masvs_control: MSTG-PLATFORM-3
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  # =============================================================================
+  # MASTG-NET: Network Security Issues
+  # =============================================================================
+  - id: MASTG-NET-001
+    pattern: |
+      ALLOW_ALL_HOSTNAME_VERIFIER
+    message: |
+      Trusting all hostnames is insecure. Implement proper certificate validation.
+    severity: ERROR
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "9.1"
+
+  - id: MASTG-NET-002
+    pattern: |
+      setHostnameVerifier(AcceptAllVerifier)
+    message: |
+      AcceptAllVerifier bypasses SSL validation. Implement proper hostname verification.
+    severity: ERROR
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "9.1"
+
+  - id: MASTG-NET-003
+    pattern: |
+      TrustManagerFactory
+    message: |
+      Custom TrustManager implementation detected. Ensure it performs proper validation.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-004
+    pattern: |
+      X509TrustManager
+    message: |
+      Custom X509TrustManager detected. Verify it doesn't accept invalid certificates.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-005
+    pattern: |
+      usesCleartextTraffic="true"
+    message: |
+      Cleartext traffic allowed. Enable forceHTTPS in network security config.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-319
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-006
+    pattern: |
+      NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted
+    message: |
+      Cleartext traffic check detected. Verify enforcement of HTTPS.
+    severity: INFO
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-319
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-NET-007
+    pattern: |
+      OkHttpClient.Builder().hostnameVerifier(...)
+    message: |
+      Custom hostname verifier in OkHttp. Ensure it performs proper validation.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-008
+    pattern: |
+      Retrofit.Builder().client(...)
+    message: |
+      Custom OkHttpClient for Retrofit. Verify SSL/TLS configuration.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  # =============================================================================
+  # MASTG-STORAGE: Data Storage Issues
+  # =============================================================================
+  - id: MASTG-STORAGE-001
+    pattern: |
+      getExternalStorageDirectory()
+    message: |
+      Writing to external storage exposes data to other apps.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-STORAGE-002
+    pattern: |
+      Runtime.getRuntime().exec("cat /data/data/...")
+    message: |
+      Attempting to read app data directory directly.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-STORAGE-003
+    pattern: |
+      SQLiteDatabase.openOrCreateDatabase(...)
+    message: |
+      Direct database file access. Use Room or ContentProvider for secure access.
+    severity: WARNING
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-STORAGE-004
+    pattern: |
+      FileOutputStream($PATH, MODE_WORLD_READABLE)
+    message: |
+      File created with world-readable permissions.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-3
+      owasp_category: M1-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-STORAGE-005
+    pattern: |
+      android:allowBackup="true"
+    message: |
+      allowBackup enabled. Sensitive data may be extracted from backups.
+    severity: WARNING
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-STORAGE-006
+    pattern: |
+      $PASSWORD = "..."
+    message: |
+      Hardcoded password detected. Store passwords securely in Keystore.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-798
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "9.1"
+
+  - id: MASTG-STORAGE-007
+    pattern: |
+      $KEY = "API_KEY"
+    message: |
+      Hardcoded API key detected. Use secure storage mechanisms.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-798
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "9.1"
+
+  - id: MASTG-STORAGE-008
+    pattern: |
+      "token" == $X || $X.equals("token")
+    message: |
+      Hardcoded token detected. Use Android Keystore or secure preferences.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-798
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "9.1"
+
+  # =============================================================================
+  # MASTG-PLATFORM: Platform Security Issues
+  # =============================================================================
+  - id: MASTG-PLATFORM-001
+    pattern: |
+      addJavascriptInterface(...)
+    message: |
+      addJavascriptInterface exposes JavaScript interface to WebView. Ensure only trusted content.
+    severity: ERROR
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-095
+      masvs_control: MSTG-PLATFORM-3
+      owasp_category: M4-2023
+      cvss_4_0_score: "8.1"
+
+  - id: MASTG-PLATFORM-002
+    pattern: |
+      loadUrl("javascript:...")
+    message: |
+      Dynamic JavaScript execution in WebView. Validate and sanitize input.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-095
+      masvs_control: MSTG-PLATFORM-3
+      owasp_category: M4-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-PLATFORM-003
+    pattern: |
+      setJavaScriptEnabled(true)
+    message: |
+      JavaScript enabled in WebView. Ensure proper input validation.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-095
+      masvs_control: MSTG-PLATFORM-3
+      owasp_category: M4-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-PLATFORM-004
+    pattern: |
+      startActivity($INTENT)
+    message: |
+      Activity start detected. Validate intent destinations and data.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-PLATFORM-005
+    pattern: |
+      sendBroadcast($INTENT)
+    message: |
+      Broadcast detected. Use LocalBroadcastManager or explicit broadcasts.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-078
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-PLATFORM-006
+    pattern: |
+      getParcelableExtra(...)
+    message: |
+      Parcelable extra detected. Validate and type-check before use.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-PLATFORM-007
+    pattern: |
+      PendingIntent.getActivity(...)
+    message: |
+      PendingIntent detected. Ensure mutable flag is set appropriately.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-PLATFORM-008
+    pattern: |
+      getSerializableExtra(...)
+    message: |
+      Serializable extra detected. May be vulnerable to deserialization attacks.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-PLATFORM-009
+    pattern: |
+      Class.forName("com.sun.rowset")
+    message: |
+      Deserialization of untrusted data may lead to RCE.
+    severity: ERROR
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-502
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "9.8"
+
+  - id: MASTG-PLATFORM-010
+    pattern: |
+      ObjectInputStream
+    message: |
+      Java deserialization detected. Validate all input before deserializing.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-502
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "7.5"
+
+  # =============================================================================
+  # MASTG-BINARY: Native Code Issues
+  # =============================================================================
+  - id: MASTG-BINARY-001
+    pattern: |
+      System.loadLibrary(...)
+    message: |
+      Native library loading detected. Verify library source and integrity.
+    severity: INFO
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-BINARY-002
+    pattern: |
+      Runtime.getRuntime().loadLibrary(...)
+    message: |
+      Dynamic native library loading. Check library path for injection.
+    severity: WARNING
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-BINARY-003
+    pattern: |
+      dlopen(...)
+    message: |
+      Dynamic library opening detected. Verify library signatures.
+    severity: WARNING
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-BINARY-004
+    pattern: |
+      JNI_OnLoad
+    message: |
+      JNI native method hook detected. Verify call chain integrity.
+    severity: WARNING
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-BINARY-005
+    pattern: |
+      native \w+\(JNIEnv
+    message: |
+      Native method declaration detected. Ensure native code is reviewed.
+    severity: INFO
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "5.3"
+
+  # =============================================================================
+  # Additional MASTG-CRYPTO rules
+  # =============================================================================
+  - id: MASTG-CRYPTO-009
+    pattern: |
+      KeyGenerator.getInstance("AES")
+    message: |
+      Verify KeyGenerator uses sufficient key size (256 bits for AES).
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-3
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-010
+    pattern: |
+      IvParameterSpec
+    message: |
+      IV detected. Ensure IV is randomly generated for each encryption operation.
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-329
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-011
+    pattern: |
+      NoSuchPaddingException
+    message: |
+      Padding exception handling detected. Verify cipher configuration.
+    severity: INFO
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-CRYPTO-012
+    pattern: |
+      PBEParameterSpec
+    message: |
+      Password-based encryption detected. Ensure proper iteration count (100k+).
+    severity: WARNING
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-327
+      masvs_control: MSTG-CRYPTO-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-CRYPTO-013
+    pattern: |
+      KeyStore.getInstance(...)
+    message: |
+      Keystore access detected. Verify keystore type and protection.
+    severity: INFO
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-321
+      masvs_control: MSTG-CRYPTO-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-CRYPTO-014
+    pattern: |
+      EncryptedSharedPreferences
+    message: |
+      EncryptedSharedPreferences used correctly for secure storage.
+    severity: INFO
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-CRYPTO-015
+    pattern: |
+      MasterKey
+    message: |
+      MasterKey for EncryptedSharedPreferences. Ensure created with secure parameters.
+    severity: INFO
+    metadata:
+      category: MASTG-CRYPTO
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "3.1"
+
+  # =============================================================================
+  # Additional MASTG-AUTH rules
+  # =============================================================================
+  - id: MASTG-AUTH-007
+    pattern: |
+      androidx.biometric.BiometricPrompt
+    message: |
+      Biometric authentication using AndroidX Biometric library.
+    severity: INFO
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-287
+      masvs_control: MSTG-AUTH-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-AUTH-008
+    pattern: |
+      androidx.security.crypto
+    message: |
+      AndroidX Security library detected for encrypted storage.
+    severity: INFO
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M5-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-AUTH-009
+    pattern: |
+      Keychain
+    message: |
+      iOS Keychain interop detected on Android. Verify implementation.
+    severity: WARNING
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-922
+      masvs_control: MSTG-STORAGE-2
+      owasp_category: M5-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-AUTH-010
+    pattern: |
+      android.content.Intent.getScheme
+    message: |
+      Custom URL scheme detected. Validate and sanitize all incoming URLs.
+    severity: WARNING
+    metadata:
+      category: MASTG-AUTH
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "7.5"
+
+  # =============================================================================
+  # Additional MASTG-NET rules
+  # =============================================================================
+  - id: MASTG-NET-009
+    pattern: |
+      HttpsURLConnection
+    message: |
+      HTTPS connection detected. Verify certificate validation.
+    severity: INFO
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-NET-010
+    pattern: |
+      SSLSocketFactory
+    message: |
+      Custom SSL socket factory. Verify it doesn't bypass validation.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-011
+    pattern: |
+      CertificateFactory.getInstance
+    message: |
+      Custom certificate factory. Verify certificate validation logic.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-012
+    pattern: |
+      TrustManager.getAcceptedIssuers
+    message: |
+      Custom trust manager implementation detected.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-295
+      masvs_control: MSTG-NET-2
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-013
+    pattern: |
+      SSLContext.getInstance("TLSv1")
+    message: |
+      TLSv1.0 detected. Enable TLSv1.2 or higher.
+    severity: WARNING
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-326
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-NET-014
+    pattern: |
+      URL.openConnection
+    message: |
+      Network connection detected. Ensure HTTPS is used.
+    severity: INFO
+    metadata:
+      category: MASTG-NET
+      cwe_id: CWE-319
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "3.1"
+
+  # =============================================================================
+  # Additional MASTG-STORAGE rules
+  # =============================================================================
+  - id: MASTG-STORAGE-009
+    pattern: |
+      android:debuggable="true"
+    message: |
+      Debug flag enabled in release build. Disable for production.
+    severity: ERROR
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-489
+      masvs_control: MSTG-RESILIENCE-4
+      owasp_category: M1-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-STORAGE-010
+    pattern: |
+      "password" == $X || $X.contains("password")
+    message: |
+      Password-related string in code. Verify not logging or storing insecurely.
+    severity: WARNING
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-312
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-STORAGE-011
+    pattern: |
+      File.createTempFile
+    message: |
+      Temporary file creation. Ensure proper cleanup and secure deletion.
+    severity: INFO
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-STORAGE-012
+    pattern: |
+      android:usesCleartextTraffic="true"
+    message: |
+      Cleartext traffic enabled. Enable network security config for HTTPS only.
+    severity: WARNING
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-319
+      masvs_control: MSTG-NET-1
+      owasp_category: M3-2023
+      cvss_4_0_score: "7.5"
+
+  - id: MASTG-STORAGE-013
+    pattern: |
+      getCacheDir()
+    message: |
+      Cache directory access. Don't store sensitive data in cache.
+    severity: INFO
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-STORAGE-014
+    pattern: |
+      filesDir
+    message: |
+      Internal files directory. Good for app-private storage.
+    severity: INFO
+    metadata:
+      category: MASTG-STORAGE
+      cwe_id: CWE-276
+      masvs_control: MSTG-STORAGE-1
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  # =============================================================================
+  # Additional MASTG-PLATFORM rules
+  # =============================================================================
+  - id: MASTG-PLATFORM-011
+    pattern: |
+      android:exported="true"
+    message: |
+      Exported component detected. Verify proper permissions are set.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-289
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-PLATFORM-012
+    pattern: |
+      android:permission="signature"
+    message: |
+      Signature-level permission detected. Ensure proper signing.
+    severity: INFO
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-289
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-PLATFORM-013
+    pattern: |
+      Uri.parse(...)
+    message: |
+      URI parsing detected. Validate URI format and scheme.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-PLATFORM-014
+    pattern: |
+      ContentProvider
+    message: |
+      Content provider detected. Verify proper permissions and input validation.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-094
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-PLATFORM-015
+    pattern: |
+      abstract ResolverActivity
+    message: |
+      Resolver activity detected. Ensure only trusted apps can resolve intents.
+    severity: INFO
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-289
+      masvs_control: MSTG-PLATFORM-1
+      owasp_category: M4-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-PLATFORM-016
+    pattern: |
+      ClipboardManager
+    message: |
+      Clipboard access detected. Be aware of clipboard listeners.
+    severity: INFO
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-200
+      masvs_control: MSTG-PLATFORM-2
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-PLATFORM-017
+    pattern: |
+      ClipData
+    message: |
+      Clipboard data manipulation detected.
+    severity: INFO
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-200
+      masvs_control: MSTG-PLATFORM-2
+      owasp_category: M1-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-PLATFORM-018
+    pattern: |
+      UsageStatsManager
+    message: |
+      Usage stats access requires special permission. Verify grant.
+    severity: WARNING
+    metadata:
+      category: MASTG-PLATFORM
+      cwe_id: CWE-276
+      masvs_control: MSTG-PLATFORM-2
+      owasp_category: M4-2023
+      cvss_4_0_score: "5.3"
+
+  # =============================================================================
+  # Additional MASTG-RESILIENCE rules
+  # =============================================================================
+  - id: MASTG-RESILIENCE-001
+    pattern: |
+      Debug.isDebuggerConnected
+    message: |
+      Debugger detection detected. May be bypassed.
+    severity: INFO
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-4
+      owasp_category: M9-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-RESILIENCE-002
+    pattern: |
+      SystemProperties.get
+    message: |
+      System properties access detected. Used for emulator/device detection.
+    severity: INFO
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-3
+      owasp_category: M9-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-RESILIENCE-003
+    pattern: |
+      Build.FINGERPRINT
+    message: |
+      Build fingerprint access. May be checking for emulator.
+    severity: INFO
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-3
+      owasp_category: M9-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-RESILIENCE-004
+    pattern: |
+      TelephonyManager.getDeviceId
+    message: |
+      Device ID access. May be used for device fingerprinting.
+    severity: WARNING
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-2
+      owasp_category: M9-2023
+      cvss_4_0_score: "5.3"
+
+  - id: MASTG-RESILIENCE-005
+    pattern: |
+      ROOT_CHECK
+    message: |
+      Root detection library usage detected.
+    severity: INFO
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-2
+      owasp_category: M9-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-RESILIENCE-006
+    pattern: |
+      su
+    message: |
+      'su' command check detected for root detection.
+    severity: INFO
+    metadata:
+      category: MASTG-RESILIENCE
+      cwe_id: CWE-020
+      masvs_control: MSTG-RESILIENCE-2
+      owasp_category: M9-2023
+      cvss_4_0_score: "3.1"
+
+  # =============================================================================
+  # Additional MASTG-BINARY rules
+  # =============================================================================
+  - id: MASTG-BINARY-006
+    pattern: |
+      malloc
+    message: |
+      Memory allocation. Monitor for heap exploitation.
+    severity: INFO
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-401
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "3.1"
+
+  - id: MASTG-BINARY-007
+    pattern: |
+      memcpy
+    message: |
+      Memory copy operation. Monitor for buffer overflows.
+    severity: WARNING
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-119
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "6.5"
+
+  - id: MASTG-BINARY-008
+    pattern: |
+      strcpy
+    message: |
+      Unsafe string copy. Use strncpy instead.
+    severity: ERROR
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-119
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "8.1"
+
+  - id: MASTG-BINARY-009
+    pattern: |
+      sprintf
+    message: |
+      Unsafe string formatting. Use snprintf instead.
+    severity: ERROR
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-119
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "8.1"
+
+  - id: MASTG-BINARY-010
+    pattern: |
+      popen
+    message: |
+      Command execution via popen. Validate all input.
+    severity: ERROR
+    metadata:
+      category: MASTG-BINARY
+      cwe_id: CWE-078
+      masvs_control: MSTG-BINARY-1
+      owasp_category: M8-2023
+      cvss_4_0_score: "9.1"
