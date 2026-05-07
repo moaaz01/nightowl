@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NightOwl v5.0 — Advanced Android APK Security Analyzer · Premium TUI
+NightOwl — Advanced Android Security Analyzer · Premium TUI
 
 Commands:
   nightowl full     app.apk   Full 8-section analysis
@@ -549,7 +549,7 @@ class NightOwlAnalyzer:
         self.strings: list = []
         self.txt = ""
         self.d = {
-            'tool': f'NightOwl v{__version__}', 'ts': datetime.now().isoformat(),
+            'tool': 'NightOwl', 'ts': datetime.now().isoformat(),
             'apk': str(self.path),
             'info': {}, 'perms': {'all': [], 'dangerous': [], 'normal': []},
             'endpoints': {'urls': [], 'api': [], 'servers': [], 'domains': [], 'ips': [], 'emails': []},
@@ -2153,7 +2153,7 @@ class NightOwlAnalyzer:
 
         return f"""# NightOwl APK Analysis Report{' | تقرير تحليل NightOwl' if is_ar else ''}
 
-> **Tool**: NightOwl v{__version__}
+> **Tool**: NightOwl
 > **Date**: {self.d['ts']}
 > **File**: `{self.path.name}`
 > **Score**: **{sec['score']}/100**
@@ -2878,11 +2878,11 @@ def show_banner():
     if RICH:
         t = Text()
         t.append("NightOwl", style="bold cyan")
-        t.append(f" v{__version__}\n", style="dim")
+        t.append("\n", style="dim")
         t.append("Advanced Android Security Analyzer", style="white")
         con.print(Panel(t, border_style="cyan", box=box.DOUBLE_EDGE, padding=(0, 2)))
     else:
-        print(f"\n  NightOwl v{__version__} — Android APK Security Analyzer\n")
+        print(f"\n  NightOwl — Android Security Analyzer\n")
 
 
 def _err(msg):
@@ -3226,7 +3226,7 @@ def cmd_apis(apk_path: str, lang: str = 'en', json_out: bool = False):
 def main():
     p = argparse.ArgumentParser(
         prog='nightowl',
-        description=f'NightOwl v{__version__} — Advanced Android APK Security Analyzer',
+        description='NightOwl — Android Security Analysis Platform',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Run 'nightowl guide' for detailed usage instructions.")
 

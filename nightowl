@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NightOwl v6.0 — Unified Android Security Suite
+NightOwl — Unified Android Security Suite
 Usage: nightowl <command> [args]
 
 Main commands:
@@ -70,7 +70,7 @@ def show_banner():
     BANNER_SHOWN = True
     banner = """
          ╔══════════════════════════════════════════╗
-         ║     🦉 NightOwl v6.0 — Unified Suite    ║
+         ║     🦉 NightOwl — Unified Suite    ║
          ║  Android Security Analysis — All in One  ║
          ╚══════════════════════════════════════════╝
     """
