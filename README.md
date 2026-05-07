@@ -2,20 +2,20 @@
 
 # 🦉 NightOwl
 
-### Advanced Android APK Security Analyzer
+### Unified Android Security Analysis Platform
 
 **Static + Dynamic Analysis · OWASP MSTG Aligned · Agent-Ready**
 
-[![Version](https://img.shields.io/badge/version-4.0-blue.svg)](https://github.com/moaaz01/nightowl)
+[![Release](https://img.shields.io/github/v/release/moaaz01/nightowl?label=release&color=blue)](https://github.com/moaaz01/nightowl/releases)
 [![Python](https://img.shields.io/badge/python-3.12+-green.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen.svg)](tests/)
+[![All Tools](https://img.shields.io/badge/tools-24%20commands-8A2BE2.svg)](https://github.com/moaaz01/nightowl#-usage)
 
 </div>
 
 ---
 
-**NightOwl** is a comprehensive Android APK security analyzer that performs deep static analysis across 9 sections and integrates with dynamic analysis tools (Frida, Objection). Designed for security researchers, penetration testers, and AI agents.
+**NightOwl** is a unified Android security analysis platform that integrates static analysis, framework detection, runtime defense assessment, and automated bypass generation — all from a single command. Designed for security researchers, penetration testers, and AI agents.
 
 ## ✨ Key Features
 
