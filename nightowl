@@ -120,7 +120,7 @@ def main():
         if not args:
             print("Usage: nightowl decompile <apk_path>")
             return
-        nw.cmd_decompile(args[0])
+        nw.cmd_decompile(_resolve_apk(args[0]))
         return
     
     if cmd == 'apis':
@@ -128,7 +128,7 @@ def main():
         if not args:
             print("Usage: nightowl apis <apk_path>")
             return
-        nw.cmd_apis(args[0])
+        nw.cmd_apis(_resolve_apk(args[0]))
         return
     
     # ── DragonJAR commands ──
@@ -149,7 +149,8 @@ def main():
         if not args:
             print(f"Usage: nightowl {cmd} <apk_path>")
             return
-        result = fw.cmd_framework(cmd, args[0])
+        apk_path = _resolve_apk(args[0])
+        result = fw.cmd_framework(apk_path, cmd)
         print(json.dumps(result, indent=2) if isinstance(result, dict) else str(result))
         return
     
@@ -162,19 +163,31 @@ def main():
         if '--reuse-jadx' in args:
             idx = args.index('--reuse-jadx')
             reuse = args[idx+1] if idx+1 < len(args) else None
-        dj.cmd_static_audit(args[0], reuse_jadx=reuse)
+        dj.cmd_static_audit(_resolve_apk(args[0]), reuse_jadx=reuse)
         return
     
     if cmd == 'semgrep':
         show_banner()
         if not args:
-            print("Usage: nightowl semgrep <apk_path> [--reuse-jadx <dir>]")
+            print("Usage: nightowl semgrep <apk_path_or_jadx_dir> [--reuse-jadx <dir>]")
             return
+        scan_target = args[0]
         reuse = None
         if '--reuse-jadx' in args:
             idx = args.index('--reuse-jadx')
             reuse = args[idx+1] if idx+1 < len(args) else None
-        dj.cmd_semgrep(args[0], reuse_jadx=reuse)
+        result = dj.cmd_semgrep(_resolve_apk(scan_target), reuse_jadx=reuse)
+        print("---BEGIN_JSON---")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        print("---END_JSON---")
+        # Also save to file for convenience
+        report_path = _SCRIPT_DIR / 'workspace' / 'reports' / f"semgrep-{Path(_resolve_apk(scan_target)).stem}.json"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+        if RICH:
+            con.print(f"[dim]Report saved: {report_path}[/]")
+        else:
+            print(f"Report saved: {report_path}")
         return
     
     if cmd == 'rasp':
@@ -183,7 +196,9 @@ def main():
             print("Usage: nightowl rasp <apk_path> [package_name]")
             return
         pkg = args[1] if len(args) > 1 else None
-        result = rt.cmd_rasp(args[0], pkg)
+        apk_path = _resolve_apk(args[0])
+        result = rt.cmd_rasp(apk_path, pkg)
+        print(json.dumps(result, indent=2, ensure_ascii=False) if isinstance(result, dict) else str(result))
         return
     
     if cmd == 'bypass':
