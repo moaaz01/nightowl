@@ -336,8 +336,8 @@ class SemgrepScanner:
         if not self.check_available():
             return {'tool_available': False, 'findings': [], 'error': 'semgrep not installed'}
         
-        cmd = ['semgrep', '--config', self.rules_file, '--quiet', '--no-gitignore',
-               '--json', '--exclude', '*.min.js', '--exclude', '*.min.css',
+        cmd = ['semgrep', '--config', self.rules_file, '--quiet', '--json',
+               '--no-git-ignore', '--exclude', '*.min.js', '--exclude', '*.min.css',
                str(self.scan_dir)]
         
         try:
@@ -435,8 +435,21 @@ def cmd_static_audit(apk_path, output_dir=None, mode='full', reuse_jadx=None):
     auditor = StaticAuditor(apk_path, output_dir, mode, reuse_jadx)
     return auditor.run()
 
-def cmd_semgrep(scan_dir, rules_file=None, output_file=None):
-    """Run Semgrep MASTG scan."""
+def cmd_semgrep(scan_target, rules_file=None, output_file=None, reuse_jadx=None):
+    """Run Semgrep MASTG scan. Accepts APK path or decompiled directory."""
+    # If an APK file, decompile with jadx first
+    if str(scan_target).endswith('.apk') and Path(scan_target).is_file():
+        from nightowl_pkg.core import decompile_apk
+        apk_name = Path(scan_target).stem
+        jadx_dir = WORKSPACE / "decompiled" / apk_name / "jadx-src" / "sources"
+        if not jadx_dir.exists():
+            jadx_out, _ = decompile_apk(scan_target)
+            if jadx_out:
+                jadx_dir = Path(jadx_out) / "sources"
+        scan_dir = str(jadx_dir) if jadx_dir.exists() else scan_target
+    else:
+        scan_dir = scan_target
+    
     scanner = SemgrepScanner(scan_dir, rules_file)
     return scanner.run(output_file)
 

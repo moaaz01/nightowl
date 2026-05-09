@@ -12,6 +12,7 @@ rules:
     message: |
       ECB mode is insecure for AES encryption. Use GCM or CBC with proper IV.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -25,6 +26,7 @@ rules:
     message: |
       DES is a deprecated cipher. Use AES with at least 128-bit keys.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -38,6 +40,7 @@ rules:
     message: |
       MD5 is a broken hash function. Use SHA-256 or stronger.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -51,6 +54,7 @@ rules:
     message: |
       SHA-1 is deprecated. Use SHA-256 or stronger.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -64,6 +68,7 @@ rules:
     message: |
       Hardcoded AES key detected. Keys should be generated dynamically or stored in Keystore.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-321
@@ -77,6 +82,7 @@ rules:
     message: |
       Verify SecureRandom is seeded properly. Consider using java.security.SecureRandom
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-338
@@ -90,6 +96,7 @@ rules:
     message: |
       String comparison for passwords may leak timing information. Use constant-time comparison.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-521
@@ -103,6 +110,7 @@ rules:
     message: |
       ECB mode with PKCS5Padding is insecure. Use GCM mode for authenticated encryption.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -119,6 +127,7 @@ rules:
     message: |
       Sensitive data stored in SharedPreferences without encryption. Use EncryptedSharedPreferences.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-922
@@ -132,6 +141,7 @@ rules:
     message: |
       MODE_WORLD_READABLE allows other apps to read the data. Use private mode.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-276
@@ -145,6 +155,7 @@ rules:
     message: |
       MODE_WORLD_WRITABLE is a security risk. Use private mode.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-276
@@ -158,6 +169,7 @@ rules:
     message: |
       Check if $KEY contains sensitive data that should not be in preferences.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-922
@@ -171,6 +183,7 @@ rules:
     message: |
       Biometric authentication detected. Ensure proper negative button handling and fallback.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-287
@@ -184,6 +197,7 @@ rules:
     message: |
       FLAG_SECURE prevents screenshots in sensitive screens. Good practice for auth flows.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-200
@@ -200,6 +214,7 @@ rules:
     message: |
       Trusting all hostnames is insecure. Implement proper certificate validation.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -213,6 +228,7 @@ rules:
     message: |
       AcceptAllVerifier bypasses SSL validation. Implement proper hostname verification.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -226,6 +242,7 @@ rules:
     message: |
       Custom TrustManager implementation detected. Ensure it performs proper validation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -239,6 +256,7 @@ rules:
     message: |
       Custom X509TrustManager detected. Verify it doesn't accept invalid certificates.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -252,6 +270,7 @@ rules:
     message: |
       Cleartext traffic allowed. Enable forceHTTPS in network security config.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-319
@@ -265,6 +284,7 @@ rules:
     message: |
       Cleartext traffic check detected. Verify enforcement of HTTPS.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-319
@@ -278,6 +298,7 @@ rules:
     message: |
       Custom hostname verifier in OkHttp. Ensure it performs proper validation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -291,6 +312,7 @@ rules:
     message: |
       Custom OkHttpClient for Retrofit. Verify SSL/TLS configuration.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -307,6 +329,7 @@ rules:
     message: |
       Writing to external storage exposes data to other apps.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -320,6 +343,7 @@ rules:
     message: |
       Attempting to read app data directory directly.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -333,6 +357,7 @@ rules:
     message: |
       Direct database file access. Use Room or ContentProvider for secure access.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -346,6 +371,7 @@ rules:
     message: |
       File created with world-readable permissions.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -359,6 +385,7 @@ rules:
     message: |
       allowBackup enabled. Sensitive data may be extracted from backups.
     severity: WARNING
+    languages: [xml]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-922
@@ -372,6 +399,7 @@ rules:
     message: |
       Hardcoded password detected. Store passwords securely in Keystore.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-798
@@ -385,6 +413,7 @@ rules:
     message: |
       Hardcoded API key detected. Use secure storage mechanisms.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-798
@@ -398,6 +427,7 @@ rules:
     message: |
       Hardcoded token detected. Use Android Keystore or secure preferences.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-798
@@ -414,6 +444,7 @@ rules:
     message: |
       addJavascriptInterface exposes JavaScript interface to WebView. Ensure only trusted content.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-095
@@ -427,6 +458,7 @@ rules:
     message: |
       Dynamic JavaScript execution in WebView. Validate and sanitize input.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-095
@@ -440,6 +472,7 @@ rules:
     message: |
       JavaScript enabled in WebView. Ensure proper input validation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-095
@@ -453,6 +486,7 @@ rules:
     message: |
       Activity start detected. Validate intent destinations and data.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -466,6 +500,7 @@ rules:
     message: |
       Broadcast detected. Use LocalBroadcastManager or explicit broadcasts.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-078
@@ -479,6 +514,7 @@ rules:
     message: |
       Parcelable extra detected. Validate and type-check before use.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -492,6 +528,7 @@ rules:
     message: |
       PendingIntent detected. Ensure mutable flag is set appropriately.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -505,6 +542,7 @@ rules:
     message: |
       Serializable extra detected. May be vulnerable to deserialization attacks.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -518,6 +556,7 @@ rules:
     message: |
       Deserialization of untrusted data may lead to RCE.
     severity: ERROR
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-502
@@ -531,6 +570,7 @@ rules:
     message: |
       Java deserialization detected. Validate all input before deserializing.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-502
@@ -547,6 +587,7 @@ rules:
     message: |
       Native library loading detected. Verify library source and integrity.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
@@ -560,6 +601,7 @@ rules:
     message: |
       Dynamic native library loading. Check library path for injection.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
@@ -573,6 +615,7 @@ rules:
     message: |
       Dynamic library opening detected. Verify library signatures.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
@@ -586,6 +629,7 @@ rules:
     message: |
       JNI native method hook detected. Verify call chain integrity.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
@@ -594,11 +638,12 @@ rules:
       cvss_4_0_score: "5.3"
 
   - id: MASTG-BINARY-005
-    pattern: |
+    pattern-regex: |
       native \w+\(JNIEnv
     message: |
       Native method declaration detected. Ensure native code is reviewed.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
@@ -615,6 +660,7 @@ rules:
     message: |
       Verify KeyGenerator uses sufficient key size (256 bits for AES).
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -628,6 +674,7 @@ rules:
     message: |
       IV detected. Ensure IV is randomly generated for each encryption operation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-329
@@ -641,6 +688,7 @@ rules:
     message: |
       Padding exception handling detected. Verify cipher configuration.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -654,6 +702,7 @@ rules:
     message: |
       Password-based encryption detected. Ensure proper iteration count (100k+).
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-327
@@ -667,6 +716,7 @@ rules:
     message: |
       Keystore access detected. Verify keystore type and protection.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-321
@@ -680,6 +730,7 @@ rules:
     message: |
       EncryptedSharedPreferences used correctly for secure storage.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-922
@@ -693,6 +744,7 @@ rules:
     message: |
       MasterKey for EncryptedSharedPreferences. Ensure created with secure parameters.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-CRYPTO
       cwe_id: CWE-922
@@ -709,6 +761,7 @@ rules:
     message: |
       Biometric authentication using AndroidX Biometric library.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-287
@@ -722,6 +775,7 @@ rules:
     message: |
       AndroidX Security library detected for encrypted storage.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-922
@@ -735,6 +789,7 @@ rules:
     message: |
       iOS Keychain interop detected on Android. Verify implementation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-922
@@ -748,6 +803,7 @@ rules:
     message: |
       Custom URL scheme detected. Validate and sanitize all incoming URLs.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-AUTH
       cwe_id: CWE-094
@@ -764,6 +820,7 @@ rules:
     message: |
       HTTPS connection detected. Verify certificate validation.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -777,6 +834,7 @@ rules:
     message: |
       Custom SSL socket factory. Verify it doesn't bypass validation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -790,6 +848,7 @@ rules:
     message: |
       Custom certificate factory. Verify certificate validation logic.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -803,6 +862,7 @@ rules:
     message: |
       Custom trust manager implementation detected.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-295
@@ -816,6 +876,7 @@ rules:
     message: |
       TLSv1.0 detected. Enable TLSv1.2 or higher.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-326
@@ -829,6 +890,7 @@ rules:
     message: |
       Network connection detected. Ensure HTTPS is used.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-NET
       cwe_id: CWE-319
@@ -845,6 +907,7 @@ rules:
     message: |
       Debug flag enabled in release build. Disable for production.
     severity: ERROR
+    languages: [xml]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-489
@@ -858,6 +921,7 @@ rules:
     message: |
       Password-related string in code. Verify not logging or storing insecurely.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-312
@@ -871,6 +935,7 @@ rules:
     message: |
       Temporary file creation. Ensure proper cleanup and secure deletion.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -884,6 +949,7 @@ rules:
     message: |
       Cleartext traffic enabled. Enable network security config for HTTPS only.
     severity: WARNING
+    languages: [xml]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-319
@@ -897,6 +963,7 @@ rules:
     message: |
       Cache directory access. Don't store sensitive data in cache.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -910,6 +977,7 @@ rules:
     message: |
       Internal files directory. Good for app-private storage.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-STORAGE
       cwe_id: CWE-276
@@ -926,6 +994,7 @@ rules:
     message: |
       Exported component detected. Verify proper permissions are set.
     severity: WARNING
+    languages: [xml]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-289
@@ -939,6 +1008,7 @@ rules:
     message: |
       Signature-level permission detected. Ensure proper signing.
     severity: INFO
+    languages: [xml]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-289
@@ -952,6 +1022,7 @@ rules:
     message: |
       URI parsing detected. Validate URI format and scheme.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -965,6 +1036,7 @@ rules:
     message: |
       Content provider detected. Verify proper permissions and input validation.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-094
@@ -973,11 +1045,12 @@ rules:
       cvss_4_0_score: "5.3"
 
   - id: MASTG-PLATFORM-015
-    pattern: |
+    pattern-regex: |
       abstract ResolverActivity
     message: |
       Resolver activity detected. Ensure only trusted apps can resolve intents.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-289
@@ -991,6 +1064,7 @@ rules:
     message: |
       Clipboard access detected. Be aware of clipboard listeners.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-200
@@ -1004,6 +1078,7 @@ rules:
     message: |
       Clipboard data manipulation detected.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-200
@@ -1017,6 +1092,7 @@ rules:
     message: |
       Usage stats access requires special permission. Verify grant.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-PLATFORM
       cwe_id: CWE-276
@@ -1033,6 +1109,7 @@ rules:
     message: |
       Debugger detection detected. May be bypassed.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1046,6 +1123,7 @@ rules:
     message: |
       System properties access detected. Used for emulator/device detection.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1059,6 +1137,7 @@ rules:
     message: |
       Build fingerprint access. May be checking for emulator.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1072,6 +1151,7 @@ rules:
     message: |
       Device ID access. May be used for device fingerprinting.
     severity: WARNING
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1085,6 +1165,7 @@ rules:
     message: |
       Root detection library usage detected.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1098,6 +1179,7 @@ rules:
     message: |
       'su' command check detected for root detection.
     severity: INFO
+    languages: [java]
     metadata:
       category: MASTG-RESILIENCE
       cwe_id: CWE-020
@@ -1114,6 +1196,7 @@ rules:
     message: |
       Memory allocation. Monitor for heap exploitation.
     severity: INFO
+    languages: [c]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-401
@@ -1127,6 +1210,7 @@ rules:
     message: |
       Memory copy operation. Monitor for buffer overflows.
     severity: WARNING
+    languages: [c]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-119
@@ -1140,6 +1224,7 @@ rules:
     message: |
       Unsafe string copy. Use strncpy instead.
     severity: ERROR
+    languages: [c]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-119
@@ -1153,6 +1238,7 @@ rules:
     message: |
       Unsafe string formatting. Use snprintf instead.
     severity: ERROR
+    languages: [c]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-119
@@ -1166,6 +1252,7 @@ rules:
     message: |
       Command execution via popen. Validate all input.
     severity: ERROR
+    languages: [c]
     metadata:
       category: MASTG-BINARY
       cwe_id: CWE-078
