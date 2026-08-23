@@ -84,6 +84,58 @@ def _is_rooted(base):
     return code == 0 and "uid=0" in out
 
 
+def _pack(base, args):
+    """nightowl lab pack <apk> [--powershell] [--report saved.json]"""
+    apk = next((a for a in args if not a.startswith("-")), None)
+    if not apk or not Path(apk).exists():
+        print("Usage: nightowl lab pack <apk> [--powershell|-ps] "
+              "[--report saved.json]")
+        return 2
+    from nightowl_pkg.dynpack import build_pack
+    report = None
+    if "--report" in args:
+        i = args.index("--report")
+        rp = args[i + 1] if i + 1 < len(args) else None
+        if rp and Path(rp).exists():
+            import json as _json
+            report = _json.loads(Path(rp).read_text())
+    powershell = "--powershell" in args or "-ps" in args
+    out = build_pack(apk, full_report=report, powershell=powershell)
+    print(f"[+] Dynamic verification pack: {out}")
+    print("    Copy it next to the APK on the adb machine, then:")
+    if out.suffix == ".sh":
+        print(f"    bash {out.name}")
+    else:
+        print(f"    powershell -ExecutionPolicy Bypass -File {out.name}")
+    print("    Send back results.json ->  nightowl lab ingest results.json")
+    return 0
+
+
+def _ingest(base, args):
+    """nightowl lab ingest <results.json> [--patch report.json]"""
+    res = next((a for a in args if not a.startswith("-")), None)
+    if not res or not Path(res).exists():
+        print("Usage: nightowl lab ingest results.json "
+              "[--patch saved-report.json]")
+        return 2
+    from nightowl_pkg.dynpack import ingest
+    patch = None
+    if "--patch" in args:
+        i = args.index("--patch")
+        patch = args[i + 1] if i + 1 < len(args) else None
+    summary = ingest(res,
+                     out_path=str(Path(res).with_suffix(".verdicts.json")))
+    import json as _json
+    print(_json.dumps(summary, indent=2, ensure_ascii=False)[:4000])
+    if patch and Path(patch).exists():
+        rep = _json.loads(Path(patch).read_text())
+        rep["dynamic_verification"] = summary
+        Path(patch).write_text(_json.dumps(rep, indent=2,
+                                           ensure_ascii=False))
+        print(f"[+] patched {patch}")
+    return 0
+
+
 def cmd_lab(args):
     """Entry: nightowl lab <subcommand> [...]. Returns exit code."""
     sub = args[0] if args else ""
@@ -108,6 +160,8 @@ def cmd_lab(args):
         "pull": _pull,
         "backup": _backup,
         "frida": _frida,
+        "pack": _pack,
+        "ingest": _ingest,
         "objection": _objection,
         "ssl": _ssl,
         "screenshot": _screenshot,

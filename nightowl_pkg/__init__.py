@@ -3,7 +3,7 @@ NightOwl v8.0 — Ultimate Android Security Analysis Platform
 Static · Validated Secrets · AuthMap · Subscription Enforcement ·
 DeepScan Layers · Proxy Capture · MCP Agent Bridge.
 """
-__version__ = "8.2.1"
+__version__ = "8.2.2"
 
 from nightowl_pkg.core import *
 from nightowl_pkg.dragonjar import *
