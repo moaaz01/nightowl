@@ -285,7 +285,7 @@ nightowl/
 ├── nightowl.py                 # Core analysis engine (9 sections + scoring)
 ├── nightowl_pkg/
 │   ├── core.py                 # Engine re-exports + decompilation helpers
-│   ├── validators.py           # False-positive reduction engine (v7)
+│   ├── validators.py           # False-positive reduction engine
 │   ├── authmap.py              # Authentication flow mapper
 │   ├── billing.py              # Subscription enforcement analyzer
 │   ├── deepscan.py             # Advanced static layers (MASVS/CVSS)

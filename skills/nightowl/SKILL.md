@@ -1,7 +1,7 @@
 ---
 name: nightowl
 description: >-
-  Drive NightOwl v7, a unified Android security analysis platform, from any AI
+  Drive NightOwl v8, a unified Android security analysis platform, from any AI
   agent (OpenClaw, Hermes, Claude Code, Codex, OpenCode). Use when the user
   asks to analyze, scan, or pentest an APK; find hardcoded secrets, login/auth
   flows, API access points, subscription/premium enforcement weaknesses;
@@ -10,7 +10,7 @@ description: >-
   confidence-scored findings.
 ---
 
-# NightOwl v7 — Agent Skill
+# NightOwl v8 — Agent Skill
 
 Unified Android security analysis for agents. Every command supports `--json`
 (stable schema), streams human progress to **stderr**, and exits 0/1/2

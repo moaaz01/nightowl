@@ -1,4 +1,4 @@
-# deepscan.py -- NightOwl v7 Advanced Static Layers (MASTG-aligned)
+# deepscan.py -- NightOwl v8 Advanced Static Layers (MASTG-aligned)
 #
 # Layers not covered by the legacy 9-section engine:
 #   - Exported attack surface matrix (components reachable without permission)

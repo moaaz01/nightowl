@@ -1,4 +1,4 @@
-# billing.py -- NightOwl v7 Subscription & Monetization Enforcement Analyzer
+# billing.py -- NightOwl v8 Subscription & Monetization Enforcement Analyzer
 #
 # FOR AUTHORIZED SECURITY TESTING ONLY.
 #
@@ -210,7 +210,7 @@ def analyze_billing(txt, info=None):
 # ─────────────────────────────────────────────────────────────────────────────
 
 FRIDA_HEADER = """/*
- * NightOwl v7 - Subscription Enforcement Verification Script
+ * NightOwl v8 - Subscription Enforcement Verification Script
  * Target : __PACKAGE__
  * Purpose: Verify client-side entitlement weaknesses identified statically.
  *
