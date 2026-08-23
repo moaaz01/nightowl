@@ -107,6 +107,24 @@ TOOLS = [
           "Software composition analysis: vulnerable-library scan with CVE "
           "advisories + CycloneDX SBOM inventory.",
           APK_PATH_PROP, ["apk"]),
+    _tool("nightowl_dart",
+          "Flutter/Dart AOT intelligence: package imports, API base URLs, "
+          "RSA padding audit (PKCS1v15 vs OAEP), sensitive business "
+          "functions, entity-table fake-PEM classification.",
+          APK_PATH_PROP, ["apk"]),
+    _tool("nightowl_cryptoscope",
+          "Source-aware crypto audit over the decompiled tree: cipher "
+          "mode/padding inventory with provenance (APP CODE vs LIBRARY vs "
+          "OBFUSCATED), RSA padding findings, hardcoded key literals.",
+          APK_PATH_PROP, ["apk"]),
+    _tool("nightowl_surface",
+          "Exported-component exploitation map with deep links and adb "
+          "verification recipes.",
+          APK_PATH_PROP, ["apk"]),
+    _tool("nightowl_secrets_src",
+          "Secret scan across the decompiled source tree with file:line "
+          "provenance and validation-engine verdicts.",
+          APK_PATH_PROP, ["apk"]),
     _tool("nightowl_diff",
           "Compare two saved scan JSONs; reports score delta and added/"
           "resolved secrets, vulns, auth weaknesses, servers.",
@@ -248,6 +266,27 @@ def handle(msg):
                 data = PreflightChecker().run_all() \
                     if hasattr(PreflightChecker, "run_all") else \
                     {"note": "see nightowl preflight CLI"}
+            elif name in ("nightowl_dart", "nightowl_cryptoscope",
+                          "nightowl_surface", "nightowl_secrets_src"):
+                from nightowl_pkg import core as nw3
+                kind = name.split("_", 1)[1]
+                apk_arg3 = args["apk"]
+                if kind == "dart":
+                    from nightowl_pkg.dart import analyze_dart
+                    data = analyze_dart(apk_arg3)
+                else:
+                    root3 = nw3.DATA_DIR / "workspace" / "decompiled" \
+                        / Path(apk_arg3).stem
+                    if kind == "cryptoscope":
+                        from nightowl_pkg.cryptoscope import analyze_crypto_scope
+                        data = analyze_crypto_scope(root3 / "jadx-src")
+                    elif kind == "secrets_src":
+                        from nightowl_pkg.secretsrc import scan_source_secrets
+                        data = scan_source_secrets(root3 / "jadx-src")
+                    else:
+                        from nightowl_pkg.surface import analyze_surface
+                        data = analyze_surface(root3 / "apktool"
+                                               / "AndroidManifest.xml")
             elif name == "nightowl_diff":
                 from nightowl_pkg.diff import diff_reports
                 old = json.loads(Path(args["old_json"]).read_text())

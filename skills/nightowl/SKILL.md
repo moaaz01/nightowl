@@ -34,6 +34,10 @@ Unified Android security analysis for agents. Every command supports `--json`
 | Intercept HTTPS traffic | `nightowl proxy setup --burp` + `nightowl capture` |
 | Runtime lab (adb/frida/objection) | `nightowl lab devices`, `lab ssl <pkg>`, ... |
 | Compare two builds | `nightowl diff old.json new.json [--json]` |
+| Flutter/Dart deep intel | `nightowl dart <apk> --json` |
+| Who uses weak crypto - app or libs? | `nightowl cryptoscope <apk> --json` |
+| Exported surface + adb recipes | `nightowl surface <apk> --json` |
+| Secrets in decompiled sources | `nightowl secrets-src <apk> --json` |
 | Re-render saved JSON as report | `nightowl report saved.json` |
 
 ## Invocation

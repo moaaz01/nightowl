@@ -361,3 +361,102 @@ class TestPEMValidationShamCash(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestEliteREModules(unittest.TestCase):
+    """v8.1 elite reverse-engineering layer."""
+
+    def test_dart_detects_pkcs1v15_and_fast_rsa(self):
+        import tempfile
+        from nightowl_pkg.dart import analyze_dart
+        # build a fake APK with a libapp.so containing Dart-like strings
+        import zipfile
+        payload = (
+            b"package:fast_rsa/bridge/binding.fast_rsa"
+            b"\nRSA_ECB_PKCS1Padding decryptPKCS1v15"
+            b"\nhttps://api.target.sy/v4/api/\n"
+            b"generateNewSecurityCode\n&ssmile; &DoubleRightTee;\n" * 60)
+        with tempfile.TemporaryDirectory() as td:
+            apk = Path(td) / "f.apk"
+            with zipfile.ZipFile(apk, "w") as zf:
+                zf.writestr("lib/arm64-v8a/libapp.so", payload)
+            rep = analyze_dart(str(apk))
+        self.assertTrue(rep["is_flutter"])
+        self.assertIn("fast_rsa", rep["packages"])
+        self.assertIn("PKCS#1 v1.5", rep["rsa_padding"])
+        self.assertTrue(any(f["severity"] == "HIGH"
+                            for f in rep["findings"]))
+        self.assertIn("generateNewSecurityCode",
+                      rep["sensitive_functions"])
+        self.assertGreater(rep["entity_table_hits"], 50)
+
+    def test_cryptoscope_provenance_classification(self):
+        import tempfile
+        from nightowl_pkg.cryptoscope import analyze_crypto_scope
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td)
+            app = src / "sources/com/myapp"
+            app.mkdir(parents=True)
+            (app / "Pay.java").write_text(
+                'Cipher c = Cipher.getInstance("AES/ECB/PKCS5Padding");\n'
+                'String k = "ABCDEFGHIJKLMNOP".getBytes().toString();')
+            libp = src / "sources/p199l2"
+            libp.mkdir(parents=True)
+            (libp / "X.java").write_text(
+                'Cipher.getInstance("AES/GCM/NoPadding");')
+            rep = analyze_crypto_scope(src)
+        ecb = next((f for f in rep["findings"] if "ECB" in f["title"]), None)
+        self.assertIsNotNone(ecb)
+        # app-code ECB must be flagged HIGH with provenance note
+        self.assertEqual(ecb["severity"], "HIGH")
+        self.assertIn("APPLICATION code uses ECB", ecb["detail"])
+        gcm_present = any(m == "GCM" for m in rep["cipher_modes"])
+        self.assertTrue(gcm_present)
+
+    def test_surface_parses_manifest(self):
+        import tempfile
+        from nightowl_pkg.surface import analyze_surface
+        manifest = '''<manifest package="com.t.app"
+ xmlns:android="http://schemas.android.com/apk/res/android">
+ <application android:name="App">
+  <activity android:name=".Main" android:exported="true">
+   <intent-filter><action android:name="android.intent.action.VIEW"/>
+    <data android:scheme="https" android:host="t.example"/>
+   </intent-filter>
+  </activity>
+  <provider android:name=".Db" android:exported="true"
+   android:grantUriPermissions="true"/>
+ </application></manifest>'''
+        with tempfile.TemporaryDirectory() as td:
+            mf = Path(td) / "AndroidManifest.xml"
+            mf.write_text(manifest)
+            rep = analyze_surface(mf)
+        self.assertEqual(rep["package"], "com.t.app")
+        self.assertEqual(rep["exported_count"], 2)
+        prov = next(f for f in rep["findings"] if "provider" in f["title"].lower())
+        self.assertEqual(prov["severity"], "HIGH")
+        self.assertTrue(any("am start" in r for r in rep["adb_recipes"]))
+
+    def test_secrets_src_finds_assigned_keys(self):
+        import tempfile
+        from nightowl_pkg.secretsrc import scan_source_secrets
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td)
+            f = src / "Config.java"
+            gcp = "AIza" + "SyD" + "a1" * 16  # exactly 35 chars after AIza
+            assert len(gcp) == 39
+            f.write_text('public class Config {\n'
+                         f'  String KEY = "{gcp}";\n'
+                         '  String password = "Sup3rS3cretPass!";\n'
+                         '}')
+            rep = scan_source_secrets(src)
+        types = {f_["type"] for f_ in rep["findings"]}
+        self.assertIn("GCP API Key", types)
+        site_ok = any(f_["site"].endswith("Config.java:2")
+                      for f_ in rep["findings"]
+                      if f_["type"] == "GCP API Key")
+        self.assertTrue(site_ok)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.0.3"
+VERSION = "8.1.0"
 
 LOGO = r"""
    ,_         _,
@@ -106,6 +106,16 @@ AUTHENTICATION & NETWORK
 SUBSCRIPTION ENFORCEMENT (authorized testing)
   billing <apk>         Detect paid-feature enforcement model & weaknesses
   bypass-premium <apk>  Generate tailored Frida entitlement-verification hooks
+
+ELITE REVERSE ENGINEERING (v8.1)
+  dart <apk>            Flutter/Dart AOT intelligence: package imports, API
+                        routes, RSA padding audit (PKCS1v15 vs OAEP), entity-
+                        table detection that defuses fake PEM fragments
+  cryptoscope <apk>     Source-aware crypto audit over jadx tree: provenance
+                        classification (APP CODE vs LIBRARY vs OBFUSCATED),
+                        mode/padding inventory, hardcoded key literals
+  surface <apk>         Exported-component exploitation map with adb recipes
+  secrets-src <apk>     Secret scan across decompiled sources w/ file:line
 
 HARDENING / PRIVACY / SUPPLY CHAIN
   hardening <apk>       Packers/protectors fingerprint, anti-analysis families,
@@ -300,6 +310,50 @@ def main(argv=None):
         show_banner()
         from nightowl_pkg.lab import cmd_lab
         return cmd_lab(args)
+
+    # ── v8.1 Elite RE modules ────────────────────────────────────────────
+    if cmd in ("dart", "cryptoscope", "surface", "secrets-src"):
+        show_banner()
+        if not apk_arg:
+            print(f"Usage: nightowl {cmd} <apk-or-dir> [--json]")
+            return 2
+        target = _resolve_apk(apk_arg)
+        json_mode = "--json" in args
+
+        if cmd == "dart":
+            from nightowl_pkg.dart import analyze_dart
+            rep = analyze_dart(target)
+            print(json.dumps(rep, indent=2) if json_mode else _pretty_dart(rep))
+            return 0
+        if cmd == "cryptoscope":
+            from nightowl_pkg.cryptoscope import cmd_cryptoscope
+            cmd_cryptoscope(target, json_out=json_mode)
+            return 0
+        if cmd == "surface":
+            from nightowl_pkg.surface import cmd_surface
+            cmd_surface(target, json_out=json_mode)
+            return 0
+        if cmd == "secrets-src":
+            src_dir = Path(target)
+            if not src_dir.is_dir():
+                base = _data_dir() / "workspace" / "decompiled" / Path(target).stem
+                src_dir = base / "jadx-src"
+            if not src_dir.exists():
+                print("[!] Decompile first: nightowl decompile <apk>")
+                return 2
+            from nightowl_pkg.secretsrc import scan_source_secrets
+            rep = scan_source_secrets(src_dir,
+                                      min_conf=int(os.environ.get(
+                                          "NIGHTOWL_MIN_CONF", "55")))
+            kept = rep["findings"]
+            print(json.dumps(rep, indent=2) if json_mode else
+                  "\n".join(f"[{f['verdict']:9} {f['confidence']:5}] "
+                            f"{f['risk']:8} {f['type']}: {f['value'][:40]}"
+                            f"  @{f['site']}" for f in kept[:60]))
+            print(f"\n{rep['stats']['reported']} reported / "
+                  f"{rep['stats']['filtered']} filtered "
+                  f"(scanned {rep['stats']['files_scanned']} files)")
+            return 0
 
     # ── Hardening / Privacy / SCA ────────────────────────────────────────
     if cmd in ("hardening", "privacy", "sca"):
@@ -594,6 +648,31 @@ def main(argv=None):
     return 2
 
 
+def _pretty_dart(rep):
+    if not rep.get("is_flutter"):
+        return "No Dart snapshot found (not a Flutter app)."
+    lines = ["\n=== Flutter/Dart AOT Analysis ===",
+             f"architectures : {', '.join(rep['architectures'])}",
+             f"packages      : {rep['package_count']} total, "
+             f"{len(rep['packages'])} crypto/security-relevant"]
+    for name, meta in rep["packages"].items():
+        lines.append(f"  - {name}: {meta['kind']} {meta['note']}")
+    if rep["api_base_urls"]:
+        lines.append(f"API URLs      : {rep['api_base_urls'][:6]}")
+    if rep["dart_routes"]:
+        lines.append(f"Dart routes   : {rep['dart_routes'][:10]}")
+    if rep["rsa_padding"]:
+        lines.append("RSA padding   : " + str({k: v['assessment']
+                                                for k, v in rep['rsa_padding'].items()}))
+    if rep["sensitive_functions"]:
+        lines.append(f"sensitive fn  : {rep['sensitive_functions'][:8]}")
+    for f in rep["findings"]:
+        lines.append(f"  [{f['severity']:6}] {f['title']}")
+        if f.get("detail"):
+            lines.append(f"           {f['detail']}")
+    return "\n".join(lines)
+
+
 def _data_dir():
     from nightowl_pkg import core as _c
     return getattr(_c, "DATA_DIR", Path.cwd())
@@ -640,6 +719,35 @@ def _attach_advanced_layers(az, save_mode=False):
         az.d["sca"] = analyze_sca(az.txt)
     except Exception:
         pass
+    # v8.1: elite RE layers - dart always; source layers when a decompiled
+    # tree is available from a previous `decompile` run
+    try:
+        from nightowl_pkg.dart import analyze_dart
+        az.d["dart"] = analyze_dart(str(az.path))
+    except Exception:
+        pass
+    stem = az.path.stem
+    jadx = _data_dir() / "workspace" / "decompiled" / stem / "jadx-src"
+    apktool_dir = _data_dir() / "workspace" / "decompiled" / stem / "apktool"
+    if jadx.exists():
+        try:
+            from nightowl_pkg.cryptoscope import analyze_crypto_scope
+            az.d["cryptoscope"] = analyze_crypto_scope(jadx)
+        except Exception:
+            pass
+        try:
+            from nightowl_pkg.secretsrc import scan_source_secrets
+            az.d["secrets_src"] = scan_source_secrets(jadx)
+        except Exception:
+            pass
+    if apktool_dir.exists():
+        try:
+            from nightowl_pkg.surface import analyze_surface
+            mf = apktool_dir / "AndroidManifest.xml"
+            if mf.exists():
+                az.d["surface_map"] = analyze_surface(mf)
+        except Exception:
+            pass
 
 
 def _apply_min_confidence(az, min_conf):

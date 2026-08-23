@@ -335,6 +335,10 @@ function applyFilters(){
 """
 
 
+def rep_components(sm):
+    return sm.get("components") or []
+
+
 def build_html(d):
     """Render the comprehensive single-file HTML report."""
     info = d.get("info") or {}
@@ -421,6 +425,43 @@ def build_html(d):
     if d.get("sca"):
         sections.append(("sca", "Supply Chain (SCA)", "data-severity-scope",
                          _sec_sca(d["sca"])))
+    # 9b Dart AOT
+    dt = d.get("dart")
+    if dt and dt.get("is_flutter"):
+        pad_rows = "".join(
+            f'<tr><td>{esc(k)}</td><td>{esc(v.get("assessment",""))}</td>'
+            f"<td>{v.get('count')}</td></tr>"
+            for k, v in (dt.get("rsa_padding") or {}).items())
+        sections.append(("dart", "Flutter/Dart AOT Intelligence", "", f"""
+          <p><b>Packages:</b> {dt.get('package_count')} · crypto-relevant: {''.join(f'<span class="chip">{esc(k)}</span>' for k in (dt.get('packages') or {}))}</p>
+          <p><b>API URLs:</b> {''.join(f'<code>{esc(u)}</code> ' for u in (dt.get('api_base_urls') or [])[:8])}</p>
+          {('<table class="tbl"><thead><tr><th>Padding</th><th>Assessment</th><th>Hits</th></tr></thead><tbody>' + pad_rows + '</tbody></table>') if pad_rows else ''}
+          {_findings_table(dt.get('findings') or [])}"""))
+    cs = d.get("cryptoscope")
+    if cs:
+        rows = "".join(
+            f"<tr><td><code>{esc(mode)}</code></td><td>{meta.get('count')}</td>"
+            f"<td>{esc(','.join(meta.get('padding',[])))}</td>"
+            f"<td>app={meta.get('app_code',0)} lib={meta.get('library',0)} "
+            f"obf={meta.get('obfuscated',0)}</td></tr>"
+            for mode, meta in (cs.get("cipher_modes") or {}).items())
+        rp = (cs.get("rsa_padding") or {})
+        rsa_note = f'<p><b>RSA paddings:</b> {esc(rp)}</p>' if rp else ""
+        sections.append(("cryptoscope", "CryptoScope (source-aware)",
+                         "data-severity-scope",
+                         f"{('<table class="tbl"><thead><tr><th>Mode</th><th>Sites</th><th>Padding</th><th>Provenance</th></tr></thead><tbody>'+rows+'</tbody></table>') if rows else '<p class="muted">no decompiled tree</p>'}{rsa_note}{_findings_table(cs.get('findings') or [])}"))
+    sm = d.get("surface_map")
+    if sm:
+        comp_rows = "".join(
+            f"<tr><td>{esc(c['type'])}</td><td><code>{esc(c['name'])}</code></td>"
+            f"<td>{esc(c.get('permission') or 'UNPROTECTED')}</td>"
+            f"<td>{esc(', '.join(c.get('deeplinks') or []))}</td></tr>"
+            for c in rep_components(sm))
+        recipes = "<br/>".join(f"<code>{esc(r_)}</code>" for r_ in
+                               (sm.get("adb_recipes") or [])[:10])
+        sections.append(("surface", "Attack-Surface Map", "",
+                         f"{('<table class="tbl"><thead><tr><th>Type</th><th>Component</th><th>Protection</th><th>Deeplinks</th></tr></thead><tbody>'+comp_rows+'</tbody></table>') if comp_rows else ''}<h4>adb recipes (authorized device)</h4>{recipes}"))
+
     # 10 Permissions
     pm = d.get("perms") or {}
     prows = [[sev_badge(p.get("risk")), esc(p.get("name")),
