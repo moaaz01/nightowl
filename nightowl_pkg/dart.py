@@ -5,7 +5,7 @@
 # business logic names survive as structured strings. This module turns raw
 # string extraction into *intelligence*.
 #
-# Capabilities proven on ShamCash_2.2.6:
+# Capabilities proven on target application_2.2.6:
 #   - package: import inventory (fast_rsa, fluttersecurestorage, dio...)
 #   - API base URLs & versioned routes hidden in Dart
 #   - RSA padding audit (PKCS1v15 vs OAEP - Bleichenbacher relevance)

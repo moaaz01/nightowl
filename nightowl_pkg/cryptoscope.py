@@ -3,7 +3,7 @@
 # Runs over a jadx decompiled tree and answers the question binary strings
 # never can: *who* uses weak crypto - the application or its libraries?
 #
-# ShamCash lesson: AES/ECB/NoPadding + AES-SIV hits were Google Tink
+# key lesson: AES/ECB/NoPadding + AES-SIV hits were Google Tink
 # internals (strong crypto), while the real issue lived in Dart
 # (fast_rsa PKCS1v15). Provenance is everything.
 #

@@ -7,7 +7,7 @@
 # All probes are passive/unauthenticated GET requests - equivalent to a
 # browser visiting a URL. No exploitation, no auth bypass, no tampering.
 #
-# Born from the MaxStore engagement: the app's real attack surface lives
+# Born from the engagement: the app's real attack surface lives
 # on the server, not the client.
 
 import json

@@ -308,8 +308,8 @@ class TestStaticOnlyGuardRegression(unittest.TestCase):
         self.assertNotIn("Billing/license check over cleartext HTTP", titles)
 
 
-class TestPEMValidationShamCash(unittest.TestCase):
-    """v8.0.3: real-world ShamCash findings — unterminated PEM headers inside
+class TestPEMValidation(unittest.TestCase):
+    """v8.0.3: real-world engagement findings — unterminated PEM headers inside
     Flutter .so are NOT keys; embedded public-key assets are trust anchors."""
 
     def _fake_complete_privkey(self):

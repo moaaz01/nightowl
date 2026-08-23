@@ -101,7 +101,7 @@ def _find_tool(name: str, hints: list = None) -> str:
 JADX = _find_tool('jadx', [
     str(ROOT / 'tools' / 'jadx' / 'bin' / 'jadx'),
     '/home/ali/.local/share/jadx/bin/jadx',
-    '/home/ali/shamcash/tools/jadx/bin/jadx',
+    'jadx',
     '/home/ali/tools/android-reverse-engineering/jadx/bin/jadx',
 ])
 # Also check PATH fallback
@@ -111,7 +111,7 @@ if JADX == 'jadx':  # _find_tool returned the fallback name
         JADX = _jadx_path
 APKTOOL = _find_tool('apktool', [
     str(ROOT / 'tools' / 'apktool'),
-    '/home/ali/shamcash/tools/apktool',
+    'apktool',
     '/home/ali/tools/apktool',
 ])
 ADB = _find_tool('adb', [

@@ -87,7 +87,7 @@ FRAUD_SENSITIVE_FLOWS = [
      "Manual payment-proof upload flow - classic first-party fraud vector "
      "(forged transfer screenshots). Verify server-side OCR/review pipeline "
      "and amount reconciliation."),
-    # v8.2.1: live-probe calibration (MaxStore): auth IS enforced (401 on
+    # v8.2.1: live-probe calibration : auth IS enforced (401 on
     # wallet/kyc/orders without token), so unsigned requests are only
     # exploitable FROM an authenticated session -> MEDIUM conditional,
     # escalating to HIGH only if server-side replay/tamper checks are absent.

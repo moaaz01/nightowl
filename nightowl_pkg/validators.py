@@ -269,7 +269,7 @@ def _v_gcp_api_key(val, ctx):
 
 
 # ── v8.0.3: PEM structural validation --------------------------------------
-# ShamCash lesson: "-----BEGIN PRIVATE KEY-----" appearing inside a Flutter
+# key lesson: "-----BEGIN PRIVATE KEY-----" appearing inside a Flutter
 # .so with binary garbage after it is NOT a key. A real PEM block needs its
 # matching END marker and a valid base64 body. Also: complete PUBLIC KEY
 # blocks shipped as .pem/.crt assets are trust anchors (pinning), not secrets.

@@ -63,7 +63,7 @@ PINNING_PATTERNS = [
     r"CertificatePinner", r"pin-set", r"sha256/[A-Za-z0-9+/=]{20,}",
     r"network_security_config.*pin", r"TrustKit", r"sslSocketFactory\s*\(",
 ]
-# v8.0.3: Flutter/dart and embedded trust-anchor patterns — ShamCash shipped
+# v8.0.3: Flutter/dart and embedded trust-anchor patterns — target application shipped
 # assets/ca/ca.crt + isrgrootx1.pem + public_server_new.pem yet was reported
 # as "no pinning" because only OkHttp/XML markers were checked.
 PINNING_PATTERNS += [

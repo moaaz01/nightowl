@@ -92,7 +92,7 @@ def analyze_deep(txt, manifest=None, components=None):
     # v8.1.1: provenance-critical fix. The legacy engine emits component
     # NAMES (strings) without exported flags; treating every name as
     # exported produced HIGH false positives on apps whose providers are
-    # all exported=false (MaxStore case). Only dict-shaped entries carry
+    # all exported=false (case study). Only dict-shaped entries carry
     # ground truth; for string-only manifests we downgrade to INFO and
     # point analysts at `nightowl surface`.
     if manifest:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 NightOwl Test Suite
-Run: cd ~/shamcash && .venv/bin/python tests/test_nightowl.py -v
+Run: cd . && .venv/bin/python tests/test_nightowl.py -v
 """
 import sys
 import os
