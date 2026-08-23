@@ -98,7 +98,11 @@ def _sec_secrets(d):
     for i, s in enumerate(secrets):
         val = s.get("value", "")
         masked = esc(mask_value(val))
-        val_b64 = base64.b64encode(str(val).encode()).decode()
+        # Defensive invariant: the value originates from untrusted APK
+        # content. base64 is attribute-safe today, but we escape anyway so a
+        # future encoding change can never become a stored-XSS vector.
+        val_b64 = _html.escape(
+            base64.b64encode(str(val).encode()).decode(), quote=True)
         reveal = (f'<button class="reveal" data-i="{i}">reveal</button>'
                   f'<span class="val" id="v{i}" hidden '
                   f'data-b64="{val_b64}"></span>')

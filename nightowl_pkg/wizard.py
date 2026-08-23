@@ -14,6 +14,7 @@ try:
     from rich.panel import Panel
     from rich.prompt import Prompt, Confirm, IntPrompt
     from rich.markup import escape as esc
+    from rich.rule import Rule
     from rich import box
     con = Console(highlight=False)
     RICH = True

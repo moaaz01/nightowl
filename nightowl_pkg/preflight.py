@@ -29,43 +29,43 @@ TOOLS = OrderedDict([
     ('jadx', {
         'critical': True,
         'check': lambda: shutil.which('jadx'),
-        'version': lambda: subprocess.run(['jadx', '--version'], capture_output=True, text=True).stdout.strip()[:30] if shutil.which('jadx') else '',
+        'version': lambda: subprocess.run(['jadx', '--version'], capture_output=True, text=True, timeout=15).stdout.strip()[:30] if shutil.which('jadx') else '',
         'install': 'brew install jadx / apt install jadx',
     }),
     ('apktool', {
         'critical': True,
         'check': lambda: shutil.which('apktool'),
-        'version': lambda: subprocess.run(['apktool', '--version'], capture_output=True, text=True).stdout.strip()[:30] if shutil.which('apktool') else '',
+        'version': lambda: subprocess.run(['apktool', '--version'], capture_output=True, text=True, timeout=15).stdout.strip()[:30] if shutil.which('apktool') else '',
         'install': 'brew install apktool / apt install apktool',
     }),
     ('java', {
         'critical': True,
         'check': lambda: shutil.which('java'),
-        'version': lambda: subprocess.run(['java', '-version'], capture_output=True, text=True).stderr.split('\n')[0].strip() if shutil.which('java') else '',
+        'version': lambda: subprocess.run(['java', '-version'], capture_output=True, text=True, timeout=15).stderr.split('\n')[0].strip() if shutil.which('java') else '',
         'install': 'apt install default-jdk / brew install openjdk',
     }),
     ('adb', {
         'critical': True,
         'check': lambda: shutil.which('adb'),
-        'version': lambda: subprocess.run(['adb', 'version'], capture_output=True, text=True).stdout.split('\n')[0].strip()[:40] if shutil.which('adb') else '',
+        'version': lambda: subprocess.run(['adb', 'version'], capture_output=True, text=True, timeout=15).stdout.split('\n')[0].strip()[:40] if shutil.which('adb') else '',
         'install': 'apt install android-tools-adb / brew install --cask android-platform-tools',
     }),
     ('python3', {
         'critical': True,
         'check': lambda: shutil.which('python3'),
-        'version': lambda: subprocess.run(['python3', '--version'], capture_output=True, text=True).stdout.strip() if shutil.which('python3') else '',
+        'version': lambda: subprocess.run(['python3', '--version'], capture_output=True, text=True, timeout=15).stdout.strip() if shutil.which('python3') else '',
         'install': 'apt install python3',
     }),
     ('pip3', {
         'critical': False,
         'check': lambda: shutil.which('pip3') or shutil.which('pip'),
-        'version': lambda: subprocess.run([shutil.which('pip3') or 'pip', '--version'], capture_output=True, text=True).stdout.strip()[:40] if (shutil.which('pip3') or shutil.which('pip')) else '',
+        'version': lambda: subprocess.run([shutil.which('pip3') or 'pip', '--version'], capture_output=True, text=True, timeout=15).stdout.strip()[:40] if (shutil.which('pip3') or shutil.which('pip')) else '',
         'install': 'apt install python3-pip',
     }),
     ('frida', {
         'critical': False,
         'check': lambda: shutil.which('frida'),
-        'version': lambda: subprocess.run(['frida', '--version'], capture_output=True, text=True).stdout.strip()[:20] if shutil.which('frida') else '',
+        'version': lambda: subprocess.run(['frida', '--version'], capture_output=True, text=True, timeout=15).stdout.strip()[:20] if shutil.which('frida') else '',
         'install': 'pip3 install frida-tools',
     }),
     ('objection', {
@@ -77,7 +77,7 @@ TOOLS = OrderedDict([
     ('semgrep', {
         'critical': False,
         'check': lambda: shutil.which('semgrep'),
-        'version': lambda: subprocess.run(['semgrep', '--version'], capture_output=True, text=True).stdout.strip()[:20] if shutil.which('semgrep') else '',
+        'version': lambda: subprocess.run(['semgrep', '--version'], capture_output=True, text=True, timeout=15).stdout.strip()[:20] if shutil.which('semgrep') else '',
         'install': 'pip3 install semgrep',
     }),
     ('apkid', {
@@ -89,7 +89,7 @@ TOOLS = OrderedDict([
     ('rg (ripgrep)', {
         'critical': False,
         'check': lambda: shutil.which('rg'),
-        'version': lambda: subprocess.run(['rg', '--version'], capture_output=True, text=True).stdout.split('\n')[0].strip()[:40] if shutil.which('rg') else '',
+        'version': lambda: subprocess.run(['rg', '--version'], capture_output=True, text=True, timeout=15).stdout.split('\n')[0].strip()[:40] if shutil.which('rg') else '',
         'install': 'apt install ripgrep / brew install ripgrep',
     }),
     ('strings', {
@@ -130,12 +130,38 @@ PYTHON_PACKAGES = [
 class PreflightChecker:
     """Check all dependencies for NightOwl."""
 
+    # H-03: minimum external-tool versions. Parsing tools are exposed to
+    # hostile input (APKs); known parser CVEs exist in older apktool/jadx.
+    # Best-effort semver prefix match; a warning never blocks, it informs.
+    MIN_VERSIONS = {
+        'jadx': '1.4.0',
+        'apktool': '2.7.0',
+        'semgrep': None,      # informational only
+        'frida': None,
+    }
+
     def __init__(self):
         self.results = {
-            'tools': {'found': 0, 'missing': 0, 'critical_missing': 0, 'list': []},
+            'tools': {'found': 0, 'missing': 0, 'critical_missing': 0,
+                      'outdated': [], 'list': []},
             'python_packages': {'found': 0, 'missing': 0, 'list': []}
         }
-    
+
+    @staticmethod
+    def _version_below(found_version: str, minimum: str) -> bool:
+        try:
+            def nums(v):
+                out = []
+                for part in v.strip().split()[-1].split('.')[:3]:
+                    digits = ''.join(ch for ch in part if ch.isdigit())
+                    out.append(int(digits) if digits else 0)
+                while len(out) < 3:
+                    out.append(0)
+                return out
+            return nums(found_version) < nums(minimum)
+        except Exception:
+            return False
+
     def check_tools(self):
         """Check all system tools."""
         for name, info in TOOLS.items():
@@ -148,6 +174,11 @@ class PreflightChecker:
                 'version': version,
                 'install': info['install'] if not found else ''
             }
+            minimum = self.MIN_VERSIONS.get(name)
+            if found and minimum and self._version_below(version, minimum):
+                entry['below_minimum'] = True
+                entry['minimum'] = minimum
+                self.results['tools']['outdated'].append(entry)
             self.results['tools']['list'].append(entry)
             if found:
                 self.results['tools']['found'] += 1

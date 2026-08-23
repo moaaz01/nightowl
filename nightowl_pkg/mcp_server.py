@@ -10,6 +10,7 @@
 #   initialize / tools/list / tools/call (+ ping)
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +18,34 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 PROTOCOL_VERSION = "2024-11-05"
+
+
+def _confine(path):
+    """H-04: confine agent-supplied paths to NIGHTOWL_WORKSPACE.
+
+    - No NIGHTOWL_WORKSPACE set  -> unconstrained (local CLI owners trust
+      themselves; behavior unchanged for existing users).
+    - NIGHTOWL_WORKSPACE set     -> colon-separated allowlist of roots; every
+      path passed by an MCP tool call must resolve inside one of them.
+    - NIGHTOWL_ALLOW_ANYWHERE=1  -> explicit escape hatch, wins over roots.
+    """
+    rp = Path(str(path)).expanduser().resolve()
+    if os.environ.get("NIGHTOWL_ALLOW_ANYWHERE") == "1":
+        return str(rp)
+    raw = os.environ.get("NIGHTOWL_WORKSPACE", "").strip()
+    if not raw:
+        return str(rp)
+    sep = ";" if os.name == "nt" else ":"
+    for root in raw.split(sep):
+        root = Path(root).expanduser().resolve()
+        try:
+            rp.relative_to(root)
+            return str(rp)
+        except ValueError:
+            continue
+    raise PermissionError(
+        f"path outside NIGHTOWL_WORKSPACE: {rp} "
+        f"(allowed roots: {raw}; set NIGHTOWL_ALLOW_ANYWHERE=1 to override)")
 
 
 def _tool(name, desc, props, required=None):
@@ -199,6 +228,10 @@ def handle(msg):
         name = params.get("name", "")
         args = params.get("arguments") or {}
         try:
+            # H-04: confine every agent-supplied filesystem path
+            for key in ("apk", "old_json", "new_json"):
+                if key in args:
+                    args[key] = _confine(args[key])
             mapping = {
                 "nightowl_full": "full", "nightowl_secrets": "secrets",
                 "nightowl_authmap": "authmap", "nightowl_billing": "billing",
