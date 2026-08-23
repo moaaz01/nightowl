@@ -66,3 +66,8 @@ frida-scripts/
 # Binary tools
 apktool.jar
 *.jar
+
+# Generated test fixtures
+tests/targets/
+targets/*:Zone.Identifier
+targets/*:mshield
