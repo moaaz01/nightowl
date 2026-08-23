@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.0.1"
+VERSION = "8.0.2"
 
 LOGO = r"""
    ,_         _,
@@ -229,6 +229,10 @@ def main(argv=None):
         with contextlib.redirect_stdout(sys.stderr):
             az.analyze_secrets(); az.analyze_vulns()
         step("mapping authentication flows")
+        # v8.0.2: manifest must exist or deepscan loses the exported-surface
+        # layer entirely (full always had it; start was silently thinner)
+        az.analyze_manifest()
+        az.analyze_components()
         _attach_advanced_layers(az)
         step("fingerprinting packers & hardening")
         try:
