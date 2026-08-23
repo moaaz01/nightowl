@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# nightowl -- NightOwl v7 Unified CLI
+# cli.py -- NightOwl v8 Unified CLI
 #
 # Ultimate Android Security Analysis Platform
 # Static - Secrets(validation) - AuthMap - Billing Enforcement - DeepScan

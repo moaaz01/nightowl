@@ -1,4 +1,4 @@
-# validators.py -- NightOwl v7 False-Positive Reduction Engine
+# validators.py -- NightOwl v8 False-Positive Reduction Engine
 #
 # Every secret finding passes through this engine before it is reported.
 # A raw regex hit is only a *candidate*. The engine assigns each candidate:

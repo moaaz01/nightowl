@@ -1,4 +1,4 @@
-# mcp_server.py -- NightOwl v7 Model Context Protocol (stdio) server
+# mcp_server.py -- NightOwl v8 Model Context Protocol (stdio) server
 #
 # Exposes NightOwl scans as MCP tools. Works with any MCP-capable host:
 # OpenClaw, Hermes, Claude Code / Claude Desktop, Codex, OpenCode, Cursor...
@@ -16,6 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+
+from nightowl_pkg import __version__
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -217,7 +219,7 @@ def handle(msg):
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "nightowl", "version": "7.0.0"},
+            "serverInfo": {"name": "nightowl", "version": __version__},
         }}
     if method == "ping":
         return {"jsonrpc": "2.0", "id": mid, "result": {}}

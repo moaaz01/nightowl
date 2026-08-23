@@ -1,4 +1,4 @@
-# AGENTS.md — NightOwl v7 Agent Integration Guide
+# AGENTS.md — NightOwl v8 Agent Integration Guide
 
 Instructions for AI agents (OpenClaw, Hermes, Claude Code, Codex, OpenCode...)
 using NightOwl programmatically. Full contracts: [`skills/nightowl/SKILL.md`](skills/nightowl/SKILL.md).
@@ -7,7 +7,7 @@ using NightOwl programmatically. Full contracts: [`skills/nightowl/SKILL.md`](sk
 
 | Field | Value |
 |-------|-------|
-| Tool | NightOwl v7 — Ultimate Android Security Platform |
+| Tool | NightOwl v8 — Ultimate Android Security Platform |
 | Entry | `./nightowl` (CLI) or `./nightowl mcp` (MCP stdio server) |
 | Runtime | Python 3.12+ |
 | Core deps | androguard, rich (optional but recommended) |

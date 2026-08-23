@@ -376,7 +376,7 @@ def build_html(d):
         <div><h3>Severity mix</h3><div class="chips">{stat_cards}</div></div>
         <div><h3>Modules run</h3><div class="chips">{
           ''.join(f'<span class="chip">{m}</span>' for m in (
-            'core' if info else '', 'secrets-v7' if secrets is not None else '',
+            'core' if info else '', 'secrets' if secrets is not None else '',
             'authmap' if d.get('authmap') else '',
             'billing' if d.get('billing') else '',
             'deepscan' if d.get('deepscan') else '',

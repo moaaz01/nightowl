@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""NightOwl v7 module tests: validators, billing, authmap, deepscan, mcp."""
+"""NightOwl v8 module tests (introduced in the v7 round): validators, billing,
+authmap, deepscan, mcp."""
 import json
 import sys
 import unittest
@@ -291,7 +292,7 @@ class TestMCPProtocol(unittest.TestCase):
                           "method": "initialize", "params": {}})
         self.assertEqual(r["result"]["serverInfo"]["name"], "nightowl")
 
-    def test_tools_list_has_v7_scans(self):
+    def test_tools_list_has_core_scans(self):
         r = self._handle({"jsonrpc": "2.0", "id": 2,
                           "method": "tools/list", "params": {}})
         names = [t["name"] for t in r["result"]["tools"]]

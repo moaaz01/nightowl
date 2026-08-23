@@ -1,4 +1,4 @@
-# authmap.py -- NightOwl v7 Authentication Flow Mapper & API Access-Point Capture
+# authmap.py -- NightOwl v8 Authentication Flow Mapper & API Access-Point Capture
 #
 # Extracts the *authentication architecture* of an app straight from its
 # binary/decompiled source:
