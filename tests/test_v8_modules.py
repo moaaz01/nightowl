@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """NightOwl v8 module tests: hardening, privacy, sca, diff, report."""
 import json
+import os
 import sys
+import re
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -229,3 +232,76 @@ class TestReportEngine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestStaticOnlyGuardRegression(unittest.TestCase):
+    """v8.0.1 real-world find: the guard blocked dynamic commands even when
+    static-only mode was OFF. Must never regress."""
+
+    def _cli(self):
+        from nightowl_pkg import cli
+        return cli
+
+    def test_dynamic_commands_allowed_without_flag(self):
+        cli = self._cli()
+        with unittest.mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("NIGHTOWL_STATIC_ONLY", None)
+            for cmd in ("decompile", "rasp", "static-audit", "semgrep",
+                        "proxy", "lab", "bypass", "bypass-premium"):
+                self.assertFalse(cli._guard_static_only(cmd, argv=[cmd]),
+                                 f"{cmd} must be allowed without the flag")
+
+    def test_dynamic_commands_blocked_with_flag(self):
+        cli = self._cli()
+        with unittest.mock.patch.dict(
+                os.environ, {"NIGHTOWL_STATIC_ONLY": "1"}):
+            self.assertTrue(cli._guard_static_only("decompile",
+                                                   argv=["decompile", "x"]))
+
+    def test_dynamic_commands_blocked_with_inline_flag(self):
+        cli = self._cli()
+        with unittest.mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("NIGHTOWL_STATIC_ONLY", None)
+            self.assertTrue(cli._guard_static_only(
+                "lab", argv=["--static-only", "lab", "devices"]))
+
+    def test_info_section_reports_real_permissions(self):
+        """v8.0.1: run_section('info') used to skip analyze_perms -> 'Total: 0'.
+        The renderer shows the permissions panel, so perms must be analyzed."""
+        import inspect
+        from nightowl_pkg import engine
+        src = inspect.getsource(engine.NightOwlAnalyzer.run_section)
+        # analyze_perms must execute unconditionally (not behind an
+        # 'if section in' gate that excludes 'info')
+        self.assertIn("self.analyze_perms()", src)
+        gate = re.search(r"if section in \(([^)]*)\):\s*\n\s*self\.analyze_perms",
+                         src)
+        self.assertIsNone(gate,
+                          "analyze_perms is gated again - info would lie")
+
+    def test_authmap_filters_dex_descriptors(self):
+        from nightowl_pkg.authmap import _is_endpoint_noise
+        garbage = [
+            "Lcom/google/android/gms/auth/api/signin/GoogleSignInAccount",
+            "rLandroid/support/v4/media/session/MediaControllerCompat",
+            "6Landroid/hardware/camera2/params/Session",
+            "/opt/hostedtoolcache/go/1.24.2/x64/src/crypto/tls/auth",
+            "assets/svgs/session",
+            "/Auth",
+        ]
+        for g in garbage:
+            reason = _is_endpoint_noise(g)
+            self.assertNotEqual(reason, "", f"leaked: {g}")
+        legit = ["Authentication/signin", "util/registration/register",
+                 "api/v2/login", "https://api.target.com/oauth/token"]
+        for ok in legit:
+            self.assertEqual(_is_endpoint_noise(ok), "",
+                             f"false-rejected: {ok}")
+
+    def test_billing_ignores_benign_license_urls(self):
+        from nightowl_pkg.billing import analyze_billing
+        rep = analyze_billing(
+            "is_premium flag http://www.apache.org/licenses/ "
+            "PaywallActivity")
+        titles = [f["title"] for f in rep["findings"]]
+        self.assertNotIn("Billing/license check over cleartext HTTP", titles)

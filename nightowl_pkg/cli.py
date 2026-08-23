@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.0.0"
+VERSION = "8.0.1"
 
 LOGO = r"""
    ,_         _,
@@ -150,8 +150,11 @@ def _static_only(argv):
             or os.environ.get("NIGHTOWL_STATIC_ONLY") == "1")
 
 
-def _guard_static_only(cmd):
-    if cmd in DYNAMIC_COMMANDS:
+def _guard_static_only(cmd, argv=None):
+    # v8.0.1 regression fix: the guard must only fire when static-only mode
+    # is actually active — previously it blocked dynamic commands ALWAYS.
+    argv = sys.argv[1:] if argv is None else argv
+    if _static_only(argv) and cmd in DYNAMIC_COMMANDS:
         print(f"[!] '{cmd}' executes external tools/devices — blocked in "
               "static-only mode (APKs are hostile input).\n"
               "    Remove --static-only / NIGHTOWL_STATIC_ONLY to enable.")

@@ -69,6 +69,56 @@ TOKEN_IN_URL_RE = re.compile(r"""[?&](access_token|token|auth|session_id|jwt)=""
 CLEARTEXT_AUTH_RE = re.compile(
     r"http://[^\s\"']{0,120}(login|auth|token|session|signin|oauth)[^\s\"']{0,80}", re.I)
 
+# v8.0.1: noise filters — real-world APKs are full of strings that merely
+# *contain* auth/login segments without being endpoints.
+DEX_DESCRIPTOR_RE = re.compile(r"^L[a-z][a-z0-9_]*(?:/[A-Za-z0-9_$]+)+;?$")
+# DEX type references with junk prefixes: "...$rLandroid/support/v4/..."
+DEX_TYPE_ANYWHERE_RE = re.compile(
+    r"L(?:android|java|javax|kotlin|com|org|io|net|me|de|uk|cz|hu)"
+    r"(?:/[A-Za-z0-9_$]+)+")
+FS_PATH_RE = re.compile(
+    r"^(?:/(?:usr|opt|system|proc|etc|var|home|Users|data|dev|sbin|bin|lib"
+    r"|private|Applications)|[A-Za-z]:\\\\)")
+STATIC_EXT_RE = re.compile(
+    r"\.(?:png|jpe?g|webp|gif|svg|ttf|otf|woff2?|dex|so|zip|mp3|mp4|wav)$",
+    re.I)
+RESOURCE_ROOT_RE = re.compile(r"^(?:assets?|res|mipmap|drawable|raw|values)/",
+                              re.I)
+FRAMEWORK_NS_RE = re.compile(
+    r"(?:^|/)(?:android|javax?|kotlin|support|v4|x500|hostedtoolcache)"
+    r"(?:/|$)", re.I)
+# Long CamelCase segments are class names, not REST routes
+# (e.g. MediaControllerCompat, GoogleSignInAccount).
+CAMELCASE_SEG_RE = re.compile(r"[A-Z][a-z]+(?:[A-Z][a-z]+){2,}[A-Za-z0-9]*")
+
+
+def _is_endpoint_noise(raw: str) -> str:
+    """Return a rejection reason, or '' when the candidate looks real."""
+    if DEX_DESCRIPTOR_RE.match(raw):
+        return "dex class descriptor"
+    if DEX_TYPE_ANYWHERE_RE.search(raw):
+        return "dex type reference"
+    if FS_PATH_RE.match(raw):
+        return "filesystem path"
+    if STATIC_EXT_RE.search(raw):
+        return "static asset extension"
+    if RESOURCE_ROOT_RE.match(raw):
+        return "app resource path"
+    if FRAMEWORK_NS_RE.search(raw) and CAMELCASE_SEG_RE.search(raw):
+        return "framework namespace + class segment"
+    segments = re.split(r"[/?#=]", raw)
+    for seg in segments:
+        if len(seg) >= 14 and CAMELCASE_SEG_RE.fullmatch(seg):
+            return "camelcase class segment"
+    # single segment like "/Auth" or "/login" with no host/query is usually a
+    # class-name fragment; require >= 2 path segments for bare relative paths
+    stripped = raw.strip("/")
+    if not raw.startswith(("http://", "https://")):
+        parts = [s for s in stripped.split("/") if s]
+        if len(parts) < 2:
+            return "single-segment relative path"
+    return ""
+
 
 def _dedupe(seq):
     out, seen = [], set()
@@ -113,7 +163,12 @@ def map_authentication(txt):
     for pat in AUTH_ENDPOINT_RES:
         for m in re.finditer(pat, txt):
             raw = m.group(0).strip().strip('"\'')
-            if len(raw) < 5 or raw.startswith("http") and "w3.org" in raw:
+            if len(raw) < 5:
+                continue
+            if raw.startswith("http") and "w3.org" in raw:
+                continue
+            noise = _is_endpoint_noise(raw)
+            if noise:
                 continue
             ctx = txt[max(0, m.start()-150):m.end()+150]
             kind = ("login" if re.search(r"(?i)login|signin|sign_in|session", raw)
@@ -138,6 +193,29 @@ def map_authentication(txt):
                     "http" if raw.startswith("http://") else "unknown"),
             }
             flows.append(flow)
+
+    # v8.0.1: annotated Retrofit calls are authoritative — keep them even if
+    # a generic filter would reject the path shape.
+    for path, method in annotated.items():
+        if not any(f["endpoint"] == path for f in flows):
+            kind = ("login" if re.search(r"(?i)login|signin|session", path)
+                    else "registration" if re.search(r"(?i)register|signup", path)
+                    else "token" if re.search(r"(?i)token|jwt|oauth|refresh", path)
+                    else "mfa" if re.search(r"(?i)otp|mfa|verify", path)
+                    else "unknown")
+            ctx_match = re.search(re.escape(path), txt)
+            ctx = txt[max(0, ctx_match.start()-150):ctx_match.end()+150] \
+                if ctx_match else ""
+            params = [c for c in CREDENTIAL_FIELDS
+                      if re.search(r"[\"'\s]" + c + r"[\"'\s:=]", ctx)]
+            flows.append({
+                "type": kind,
+                "endpoint": path[:160],
+                "http_method": method,
+                "credential_params": params[:10],
+                "grant_types": [],
+                "transport": "unknown",
+            })
 
     flows = _dedupe(flows)[:60]
 

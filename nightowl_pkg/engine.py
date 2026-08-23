@@ -16,7 +16,7 @@ Commands:
   nightowl proxy              Network proxy setup
 """
 
-__version__ = "8.0"
+__version__ = "8.0.1"
 
 import os, sys, json, re, zipfile, hashlib, argparse, shutil, warnings
 from pathlib import Path
@@ -860,10 +860,13 @@ class NightOwlAnalyzer:
             url = url.rstrip('.,;"\')>}]')
             if any(n in url for n in NOISE) or len(url) < 12:
                 continue
-            urls.add(url)
+            # v8.0.1: a host without a dot is concatenated-string noise
+            # (e.g. "http://answersAES-CBCcharsetderivedno"), never a server.
             m = re.match(r'(https?://[^/?#]+)', url)
-            if m:
-                servers.add(m.group(1))
+            if not m or '.' not in m.group(1).split('//', 1)[1]:
+                continue
+            urls.add(url)
+            servers.add(m.group(1))
         for pat in [r'/api/v?\d+/[a-zA-Z0-9/_\-]{3,}',
                     r'/[a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+\.(?:php|json|xml|do|action|aspx)',
                     r'(?:endpoint|baseurl|api_?url|BASE_URL)[^"\']{0,5}["\']([^"\']{10,})']:
@@ -1520,8 +1523,9 @@ class NightOwlAnalyzer:
         show_banner()
         self.analyze_info()
         self.analyze_cert()
-        if section in ('perms', 'full'):
-            self.analyze_perms()
+        # v8.0.1: analyze_perms for every section — the info renderer displays
+        # the permissions panel, and skipping it produced "Total: 0" lies.
+        self.analyze_perms()
         self.extract_strings()
         if section in ('urls', 'full', 'secrets', 'vulns', 'apis'):
             self.analyze_endpoints()

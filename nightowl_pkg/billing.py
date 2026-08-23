@@ -171,10 +171,27 @@ def analyze_billing(txt, info=None):
 
     for u in h["billing_urls"]:
         if u.startswith("http://"):
-            add("CRITICAL", "Billing/license check over cleartext HTTP",
-                f"License or purchase endpoint sent over unencrypted HTTP: {u}",
-                "MASVS-NETWORK-1", [u])
-            break
+            # v8.0.1: license/billing keywords appear in benign URLs too
+            # (e.g. http://www.apache.org/licenses/). Only flag when the HOST
+            # itself looks like a payment/license service.
+            from urllib.parse import urlparse
+            try:
+                netloc = urlparse(u).netloc.lower()
+            except Exception:
+                continue
+            benign = any(d in netloc for d in (
+                "apache.org", "w3.org", "schemas.android.com",
+                "google.com", "googleapis.com", "example.com", "github.com",
+                "opensource.org", "creativecommons.org", "gnu.org"))
+            relevant = any(k in netloc for k in (
+                "pay", "billing", "purchase", "receipt", "license",
+                "subscri", "iap", "wallet"))
+            if not benign and relevant:
+                add("CRITICAL", "Billing/license check over cleartext HTTP",
+                    f"License or purchase endpoint sent over unencrypted "
+                    f"HTTP: {u}",
+                    "MASVS-NETWORK-1", [u])
+                break
 
     if h["paywall_ui"] and not h["server_validation"] and h["entitlements"]:
         add("MEDIUM", "Paywall enforced only in UI layer",
