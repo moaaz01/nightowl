@@ -85,12 +85,38 @@ def create_test_apk(output_path: str, inject_secrets: bool = False):
         ]
         if inject_secrets:
             test_strings.extend([
-                'AKIAIOSFODNN7EXAMPLE',  # AWS key pattern
-                'sk_live_test1234567890abcdef',  # Stripe key pattern
-                'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234',  # GitHub token
+                'AKIAIOSFODNN7EXAMPLE',  # docs example -> must be FILTERED
+                'sk_live_test1234567890abcdef',  # test-mode live key -> FILTERED
+                'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234',
                 'password="super_secret_123"',
-                'api_key="my_test_api_key_value_here"',
+                'api_key="my_test_api_key_value_here"',  # placeholder -> FILTERED
                 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc123',
+            ])
+
+        # v7 fixtures: authentication flows + subscription enforcement
+        if inject_secrets:
+            test_strings.extend([
+                # ── Auth flow fixtures ────────────────────────────────
+                '@POST("auth/login")',
+                '@POST("oauth/token")',
+                '@GET("api/v2/user/session")',
+                'https://secure.example.com/oauth/token?grant_type=password',
+                'loginRequest(username, password, otp)',
+                'addHeader("Authorization", "Bearer " + authToken)',
+                'putString("access_token", token)',
+                'getSharedPreferences("auth_prefs", MODE_PRIVATE)',
+                'http://insecure.example.com/api/login',
+                'CertificatePinner.Builder()',
+                # ── Subscription enforcement fixtures ─────────────────
+                'com.android.billingclient.api.BillingClient',
+                'queryPurchasesAsync',
+                'acknowledgePurchase',
+                'getBoolean("is_premium", false)',
+                'boolean isPremiumUnlocked() { return prefs.getBoolean("is_premium", false); }',
+                'debug_unlock_all_features',
+                'https://api.example.com/v1/subscriptions/verify',
+                'PaywallActivity',
+                'RevenueCat CustomerInfo isEntitledTo',
             ])
 
         zf.writestr('assets/test_config.txt', '\n'.join(test_strings))

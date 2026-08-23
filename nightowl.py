@@ -553,7 +553,8 @@ class NightOwlAnalyzer:
             'apk': str(self.path),
             'info': {}, 'perms': {'all': [], 'dangerous': [], 'normal': []},
             'endpoints': {'urls': [], 'api': [], 'servers': [], 'domains': [], 'ips': [], 'emails': []},
-            'secrets': [], 'security': {'issues': [], 'score': 100},
+            'secrets': [], 'secrets_filtered': [], 'secrets_stats': {},
+            'security': {'issues': [], 'score': 100},
             'arch': {}, 'vulns': [], 'desc': {}, 'manifest': {}, 'components': {}, 'cert': {},
         }
 
@@ -955,23 +956,14 @@ class NightOwlAnalyzer:
                     if len(val) < 8:
                         continue
 
-                    # Apply smart filtering
-                    if _is_likely_false_positive(label, val, self.txt):
-                        continue
+                    # v7: legacy pre-filters removed — every raw candidate now
+                    # reaches the validators engine, which decides with
+                    # confidence scores instead of silently dropping findings.
 
                     key = f"{label}:{val[:20]}"
                     if key in seen:
                         continue
                     seen.add(key)
-
-                    # Additional context check for Flutter apps
-                    if is_flutter:
-                        # Skip if value appears to be a class/method name
-                        if re.match(r'^[A-Z][a-z]+[A-Z][a-z]+', val):  # CamelCase
-                            continue
-                        # Skip if value is very long and random-looking
-                        if len(val) > 40 and len(set(val)) / len(val) > 0.6:
-                            continue
 
                     # Find context: surrounding code (2 lines before the match)
                     match_pos = m.start()
@@ -1012,16 +1004,29 @@ class NightOwlAnalyzer:
             except re.error:
                 pass
 
-        # Sort by risk (CRITICAL first)
-        risk_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
-        results.sort(key=lambda x: risk_order.get(x['risk'], 99))
+        # ── v7: False-positive reduction engine (validators) ──────────
+        try:
+            from nightowl_pkg.validators import triage_findings
+            kept, filtered = triage_findings(results, full_text=self.txt)
+        except Exception as _ve:
+            kept, filtered = results, []
+            sys.stderr.write(f"[nightowl] validator engine skipped: {_ve}\n")
 
-        # Limit results to prevent overwhelming output
-        self.d['secrets'] = results[:50]
-        
+        self.d['secrets'] = kept[:80]
+        self.d['secrets_filtered'] = filtered[:50]
+        self.d['secrets_stats'] = {
+            'raw_candidates': len(results),
+            'reported': len(self.d['secrets']),
+            'filtered': len(filtered),
+            'confirmed': sum(1 for s in self.d['secrets'] if s.get('verdict') == 'CONFIRMED'),
+            'likely': sum(1 for s in self.d['secrets'] if s.get('verdict') == 'LIKELY'),
+            'suspected': sum(1 for s in self.d['secrets'] if s.get('verdict') == 'SUSPECTED'),
+        }
+
         # If we have a Flutter app with many results, add a note
         if is_flutter and len(results) > 10:
-            self.d['secrets_note'] = "Flutter app detected - some results may be framework artifacts"
+            self.d['secrets_note'] = ("Flutter app detected - validation engine "
+                                      "applied; only structurally-valid findings shown")
 
 
     def analyze_security(self):
@@ -1163,21 +1168,18 @@ class NightOwlAnalyzer:
             max_secrets_pen = 15  # Flutter apps get more lenient scoring
         
         # Count actual issues (not just secrets)
+        # v7: weight penalty by validator verdict + confidence
+        verdict_mult = {'CONFIRMED': 1.0, 'LIKELY': 0.7, 'SUSPECTED': 0.25}
         actual_secrets_issues = 0
         for s in self.d['secrets']:
-            sp = base_pen.get(s['risk'], 0)
-            # Only count if not a likely false positive
-            if not _is_likely_false_positive(s['type'], s.get('value', ''), txt):
-                actual_secrets_issues += 1
-                categories['Secrets']['issues'] += 1
-                if secrets_pen < max_secrets_pen:
-                    add = min(sp, max_secrets_pen - secrets_pen)
-                    secrets_pen += add
-                    categories['Secrets']['pen'] += add
-        
-        # If we filtered out many false positives, reduce penalty further
-        if is_flutter and len(self.d['secrets']) > 5 and actual_secrets_issues < 3:
-            secrets_pen = min(secrets_pen, 10)  # Extra lenient for Flutter with few real secrets
+            mult = verdict_mult.get(s.get('verdict'), 0.25)
+            sp = base_pen.get(s['risk'], 0) * (mult if mult else 0.25)
+            actual_secrets_issues += 1
+            categories['Secrets']['issues'] += 1
+            if secrets_pen < max_secrets_pen:
+                add = min(sp, max_secrets_pen - secrets_pen)
+                secrets_pen += add
+                categories['Secrets']['pen'] += add
         
         total_pen += secrets_pen# Dangerous permissions penalty
         for p in self.d['perms'].get('dangerous', []):
@@ -1241,9 +1243,13 @@ class NightOwlAnalyzer:
             if i['risk'] in ('CRITICAL', 'HIGH'):
                 add(i['title'], i['risk'], i['desc'], i['rec'], 'Security')
         for s in self.d['secrets']:
+            # v7: only validated findings become vulnerabilities
+            if s.get('verdict') not in ('CONFIRMED', 'LIKELY'):
+                continue
             if s['risk'] in ('CRITICAL', 'HIGH'):
                 add(f"Exposed {s['type']}", s['risk'],
-                    f"Hardcoded {s['type']} in binary",
+                    f"Hardcoded {s['type']} in binary "
+                    f"(confidence: {s.get('confidence', '?')}%)",
                     'Remove from code, use secure storage', 'Secrets')
         dp = self.d['perms']['dangerous']
         crits = [p for p in dp if p['risk'] == 'CRITICAL']
@@ -2125,6 +2131,12 @@ class NightOwlAnalyzer:
 
     # ── Markdown ──────────────────────────────────────────────────────
     def _mk_md(self) -> str:
+        # v8: comprehensive markdown; legacy template as fallback
+        try:
+            from nightowl_pkg.report import build_md
+            return build_md(self.d)
+        except Exception:
+            pass
         info = self.d['info']; ep = self.d['endpoints']; sec = self.d['security']
         ar = self.d['arch']; vulns = self.d['vulns']; pm = self.d['perms']
         is_ar = self.lang == 'ar'
@@ -2209,6 +2221,12 @@ Score: **{sec['score']}/100**
         return str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
     def _mk_html(self) -> str:
+        # v8: comprehensive interactive report; legacy template as fallback
+        try:
+            from nightowl_pkg.report import build_html
+            return build_html(self.d)
+        except Exception:
+            pass
         info = self.d['info']; ep = self.d['endpoints']; sec = self.d['security']
         ar = self.d['arch']; vulns = self.d['vulns']; pm = self.d['perms']
         is_ar = self.lang == 'ar'

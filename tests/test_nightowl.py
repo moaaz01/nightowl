@@ -39,12 +39,15 @@ def create_minimal_apk(tmpdir, with_secrets=False, with_strings=True):
         ]
     if with_secrets:
         strings.extend([
-            'AKIAIOSFODNN7EXAMPLE',
+            'AKIAIOSFODNN7EXAMPLE',  # docs example -> must be FILTERED by v7
             'sk_' + 'live_TESTSTRIPEKEY0000PLACEHOLDER',
             'ghp_' + 'TEST_GITHUB_TOKEN_PLACEHOLDER_XYZ',
             'password="test_secret_123"',
             'api_key="my_test_api_key_value_here"',
             'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc',
+            # structurally valid -> must SURVIVE v7 validation
+            'AKIAQ7F9XK2LM4RTY8UB',
+            'production s3 uploader uses this key for media sync',
         ])
     manifest = b'\x03\x00\x08\x00' + b'\x00' * 64
     with zipfile.ZipFile(str(apk_path), 'w') as zf:
@@ -288,7 +291,25 @@ class TestAnalyzer(unittest.TestCase):
         self.assertGreater(len(secrets), 0)
         types = [s['type'] for s in secrets]
         self.assertTrue(any(t in types for t in
-            ['Password', 'API Key', 'AWS Access Key', 'Stripe Live Key', 'GitHub Token']))
+            ['Password', 'API Key', 'AWS Access Key', 'Stripe Live Key',
+             'GitHub Token', 'Bearer Token']))
+        # v7: every reported finding must carry validation metadata
+        for s in secrets:
+            self.assertIn(s.get('verdict'),
+                          ('CONFIRMED', 'LIKELY', 'SUSPECTED'))
+            self.assertIsNotNone(s.get('confidence'))
+        # v7: docs example keys must be filtered, not reported
+        reported_vals = [s['value'] for s in secrets]
+        self.assertNotIn('AKIAIOSFODNN7EXAMPLE', reported_vals)
+
+    def test_fp_engine_filters_documentation_keys(self):
+        az = NightOwlAnalyzer(self._make(secrets=True))
+        az.extract_strings()
+        az.analyze_secrets()
+        stats = az.d.get('secrets_stats') or {}
+        self.assertGreater(stats.get('filtered', 0), 0)
+        filt_types = [f['type'] for f in az.d.get('secrets_filtered', [])]
+        self.assertIn('AWS Access Key', filt_types)
 
     def test_full_pipeline(self):
         az = NightOwlAnalyzer(self._make(secrets=True))

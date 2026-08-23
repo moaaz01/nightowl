@@ -1,179 +1,74 @@
-# AGENTS.md — NightOwl Agent Integration Guide
+# AGENTS.md — NightOwl v7 Agent Integration Guide
 
-Instructions for AI agents (Hermes, Claude, GPT, etc.) using NightOwl programmatically.
+Instructions for AI agents (OpenClaw, Hermes, Claude Code, Codex, OpenCode...)
+using NightOwl programmatically. Full contracts: [`skills/nightowl/SKILL.md`](skills/nightowl/SKILL.md).
 
 ## Identity
 
 | Field | Value |
 |-------|-------|
-| Tool | NightOwl v4.0 |
-| Type | Android APK static security analyzer |
-| Entry | `nightowl.py` (single-file, no install needed) |
+| Tool | NightOwl v7 — Ultimate Android Security Platform |
+| Entry | `./nightowl` (CLI) or `./nightowl mcp` (MCP stdio server) |
 | Runtime | Python 3.12+ |
-| Deps | androguard, cryptography, rich |
+| Core deps | androguard, rich (optional but recommended) |
 
-## Environment
+## Golden rules
+
+1. Always pass `--json`; progress goes to stderr, data to stdout.
+2. Exit codes: `0` ok · `1` analysis failed · `2` usage error.
+3. APK paths resolve against `./targets/` automatically.
+4. Never echo full secret values into logs — mask to first 6 / last 4 chars.
+5. Trust verdicts: report only `CONFIRMED`/`LIKELY`; `SUSPECTED` with caveat;
+   ignore `FILTERED` (audit trail lives in `.secrets_filtered[]`).
+
+## Command map
 
 ```bash
-# Activate venv before any invocation
-source venv/bin/activate
-
-# Or use venv python directly
-./venv/bin/python3 nightowl.py <cmd> <apk>
+./nightowl full <apk> --json        # everything (core+validation+authmap+billing+deepscan)
+./nightowl secrets <apk> --json     # validated secrets w/ confidence
+./nightowl authmap <apk> --json     # login flows, token lifecycle, weaknesses
+./nightowl billing <apk> --json     # subscription enforcement model + findings
+./nightowl deepscan <apk> --json    # exported surface, webview, crypto, intents
+./nightowl endpoints <apk> --json   # API access points
+./nightowl decompile <apk>          # jadx+apktool -> workspace/decompiled/
+./nightowl bypass-premium <apk>     # Frida entitlement verification script
+./nightowl capture                  # mitmproxy addon -> JSONL flows
+./nightowl proxy setup --burp       # device -> your interception proxy
+./nightowl preflight                # dependency check
 ```
 
-## Smart Path Resolution
+## jq recipes
 
-NightOwl auto-resolves APK paths:
-- `nightowl full app.apk` → tries `./app.apk`, then `targets/app.apk`
-- `nightowl full targets/app.apk` → direct path
-
-## Commands for Agents
-
-### Full Analysis (recommended starting point)
 ```bash
-python3 nightowl.py full <apk> --json
-```
-Returns complete JSON with all analysis sections.
+# only high-confidence secrets
+./nightowl secrets app.apk --json | jq '[.secrets[] | select(.confidence >= 75)]'
 
-### Targeted Extractions
+# cleartext auth weaknesses
+./nightowl authmap app.apk --json | jq '[.weaknesses[] | select(.severity == "CRITICAL")]'
+
+# can premium be unlocked client-side?
+./nightowl billing app.apk --json | jq '.enforcement_model'
+
+# grade + score
+./nightowl full app.apk --json | jq '.security.grade, .security.score'
+```
+
+## MCP
+
 ```bash
-python3 nightowl.py apis <apk> --json      # Endpoints only
-python3 nightowl.py secrets <apk> --json   # Secrets only
-python3 nightowl.py vulns <apk> --json     # Vulnerabilities only
-python3 nightowl.py manifest <apk> --json  # Components only
-python3 nightowl.py info <apk> --json      # Basic info only
+claude mcp add nightowl -- ~/nightowl_new/nightowl mcp
 ```
+Tools: `nightowl_full`, `nightowl_secrets`, `nightowl_authmap`,
+`nightowl_billing`, `nightowl_deepscan`, `nightowl_endpoints`,
+`nightowl_decompile`, `nightowl_preflight`.
 
-### Decompile (for source-level review)
-```bash
-python3 nightowl.py decompile <apk> --out ./output
-# Then: grep -r 'password\|secret\|key' ./output/jadx-src/
-```
+## Timeouts
 
-### Batch Scan
-```bash
-python3 nightowl.py scan ./targets/ --json
-```
+- strings-based scans (`secrets/authmap/billing/endpoints/deepscan`): 120s
+- `full`: 300s for ≤100MB APKs
+- `decompile`: 300s
 
-## JSON Output Schema
+## Safety
 
-```json
-{
-  "tool": "NightOwl v4.0",
-  "ts": "2026-04-13T12:00:00",
-  "apk": "/path/to/app.apk",
-  "info": {
-    "package": "com.example.app",
-    "version_name": "1.0.0",
-    "min_sdk": "23",
-    "target_sdk": "34",
-    "signing": "v2",
-    "hashes": { "md5": "...", "sha1": "...", "sha256": "..." }
-  },
-  "perms": { "all": [], "dangerous": [], "normal": [] },
-  "endpoints": {
-    "urls": [],
-    "api": [],
-    "servers": [],
-    "domains": [],
-    "ips": [],
-    "emails": [],
-    "auth_patterns": []
-  },
-  "secrets": [
-    { "type": "AWS Key", "value": "AKIA***", "risk": "CRITICAL" }
-  ],
-  "security": {
-    "score": 69,
-    "issues": []
-  },
-  "arch": {
-    "frameworks": ["Flutter"],
-    "libraries": ["Firebase"],
-    "native": ["libflutter.so"]
-  },
-  "vulns": [
-    { "id": "V-001", "title": "...", "risk": "HIGH", "rec": "..." }
-  ],
-  "manifest": {
-    "activities": [],
-    "services": [],
-    "receivers": [],
-    "providers": []
-  }
-}
-```
-
-## Scoring System
-
-- Starts at 100, deducts per finding
-- CRITICAL: -20, HIGH: -10, MEDIUM: -5, LOW: -2
-- Flutter-aware: reduced penalties for framework artifacts
-- Cap: max 25 total secrets penalty (15 for Flutter)
-- Score >= 80: SAFE, >= 60: MODERATE, < 60: HIGH RISK
-
-## Agent Task Patterns
-
-### "Is this APK safe?"
-```bash
-python3 nightowl.py full app.apk --json | jq '.security.score'
-# Score >= 80 = likely safe
-```
-
-### "What APIs does this app call?"
-```bash
-python3 nightowl.py apis app.apk --json | jq '.endpoints.servers'
-```
-
-### "Find all hardcoded credentials"
-```bash
-python3 nightowl.py secrets app.apk --json | jq '[.secrets[] | select(.risk == "CRITICAL" or .risk == "HIGH")]'
-```
-
-### "What permissions does it request?"
-```bash
-python3 nightowl.py info app.apk --json | jq '.perms.dangerous'
-```
-
-### "Generate Arabic security report"
-```bash
-python3 nightowl.py full app.apk --save --lang ar
-# Output: workspace/reports/app_<timestamp>.html
-```
-
-### "Compare two APKs"
-```bash
-python3 nightowl.py full app_v1.apk --json > v1.json
-python3 nightowl.py full app_v2.apk --json > v2.json
-python3 -c "
-import json
-v1 = json.load(open('v1.json'))
-v2 = json.load(open('v2.json'))
-print(f'v1 score: {v1[\"security\"][\"score\"]}')
-print(f'v2 score: {v2[\"security\"][\"score\"]}')
-print(f'New endpoints: {set(v2[\"endpoints\"][\"servers\"]) - set(v1[\"endpoints\"][\"servers\"])}')
-"
-```
-
-## Error Handling
-
-- Missing APK: returns exit code 1 with error message
-- Tool not found (jadx/apktool): gracefully skips, reports SKIPPED
-- Timeout: 300s for decompilation, 180s for apktool
-- Malformed APK: androguard raises, caught and reported
-
-## Known Limitations
-
-1. **Static only** — no runtime/dynamic analysis (use Frida scripts manually)
-2. **Flutter detection** — binary string extraction, not full Dart decompilation
-3. **Obfuscated code** — jadx `--deobf` helps but can't fully deobfuscate
-4. **Large APKs** — analysis time scales with APK size (>100MB may timeout)
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Error (APK not found, analysis failed) |
-| 2 | Invalid arguments |
+Authorized security testing only. Bypass/verification scripts are evidence
+tools for apps you own or are licensed to test.
