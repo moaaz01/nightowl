@@ -4,7 +4,7 @@
 #        Or just: ./nightowl-merged.sh  (interactive wizard)
 
 set -e
-WORKSPACE="${WORKSPACE:-/home/ali/shamcash}"
+WORKSPACE="${WORKSPACE:-/home/ali/nightowl_new}"
 cd "$WORKSPACE"
 
 [ -f "$WORKSPACE/venv/bin/activate" ] && source venv/bin/activate
