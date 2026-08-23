@@ -125,6 +125,15 @@ TOOLS = [
           "Secret scan across the decompiled source tree with file:line "
           "provenance and validation-engine verdicts.",
           APK_PATH_PROP, ["apk"]),
+    _tool("nightowl_apimap",
+          "API infrastructure assessment: server fingerprint, security "
+          "headers audit, error-handling leakage, TLS config, route "
+          "probes with auth enforcement verification.",
+          {"base_url": {"type": "string",
+                        "description": "API base URL to assess"},
+           "routes": {"type": "string",
+                      "description": "Comma-separated routes to probe"}},
+          ["base_url"]),
     _tool("nightowl_diff",
           "Compare two saved scan JSONs; reports score delta and added/"
           "resolved secrets, vulns, auth weaknesses, servers.",
@@ -287,6 +296,11 @@ def handle(msg):
                         from nightowl_pkg.surface import analyze_surface
                         data = analyze_surface(root3 / "apktool"
                                                / "AndroidManifest.xml")
+            elif name == "nightowl_apimap":
+                from nightowl_pkg.apimap import analyze_api_security
+                routes_arg = args.get("routes")
+                data = analyze_api_security(args["base_url"],
+                                            routes=routes_arg)
             elif name == "nightowl_diff":
                 from nightowl_pkg.diff import diff_reports
                 old = json.loads(Path(args["old_json"]).read_text())

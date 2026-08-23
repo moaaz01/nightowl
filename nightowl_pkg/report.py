@@ -462,6 +462,27 @@ def build_html(d):
         sections.append(("surface", "Attack-Surface Map", "",
                          f"{('<table class="tbl"><thead><tr><th>Type</th><th>Component</th><th>Protection</th><th>Deeplinks</th></tr></thead><tbody>'+comp_rows+'</tbody></table>') if comp_rows else ''}<h4>adb recipes (authorized device)</h4>{recipes}"))
 
+    # 9c API Infrastructure
+    api = d.get("apimap")
+    if api:
+        hdr_rows = "".join(
+            f'<tr><td>{esc(name)}</td>'
+            f'<td>{"✅" if meta["present"] else "❌"}</td></tr>'
+            for name, meta in (api.get("security_headers") or {}).items())
+        probe_rows = "".join(
+            f'<tr><td>{"🔒" if p["auth_enforced"] else "🔓"}</td>'
+            f"<td><code>{esc(p['route'])}</code></td>"
+            f"<td>{esc(p['unauthenticated_status'])}</td>"
+            f"<td class=\"sub\">{esc(p.get('body_preview','')[:60])}</td></tr>"
+            for p in (api.get("route_probes") or []))
+        sections.append(("apimap", "API Infrastructure Assessment",
+                         "data-severity-scope", f"""
+          <p>Server: <code>{esc((api.get('server_fingerprint') or {}).get('server','?'))}</code>
+          | Score: <b>{api.get('score','?')}/100</b></p>
+          {'<table class="tbl"><thead><tr><th>Header</th><th>Status</th></tr></thead><tbody>'+hdr_rows+'</tbody></table>' if hdr_rows else ''}
+          {_findings_table(api.get('findings') or [])}
+          {('<h4>Route Probes</h4><table class="tbl"><thead><tr><th></th><th>Route</th><th>Status</th><th>Body</th></tr></thead><tbody>'+probe_rows+'</tbody></table>') if probe_rows else ''}"""))
+
     # 10 Permissions
     pm = d.get("perms") or {}
     prows = [[sev_badge(p.get("risk")), esc(p.get("name")),

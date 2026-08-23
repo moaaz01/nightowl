@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.2.3"
+VERSION = "8.3.0"
 
 LOGO = r"""
    ,_         _,
@@ -116,6 +116,11 @@ ELITE REVERSE ENGINEERING (v8.1)
                         mode/padding inventory, hardcoded key literals
   surface <apk>         Exported-component exploitation map with adb recipes
   secrets-src <apk>     Secret scan across decompiled sources w/ file:line
+
+API INFRASTRUCTURE ASSESSMENT
+  apimap <base-url>     Server fingerprint, security headers audit,
+                        error-handling leakage, TLS config, route probes
+                        [--routes /a,/b,/c]
 
 HARDENING / PRIVACY / SUPPLY CHAIN
   hardening <apk>       Packers/protectors fingerprint, anti-analysis families,
@@ -354,6 +359,21 @@ def main(argv=None):
                   f"{rep['stats']['filtered']} filtered "
                   f"(scanned {rep['stats']['files_scanned']} files)")
             return 0
+
+    # ── API Infrastructure Assessment ────────────────────────────────
+    if cmd == "apimap":
+        show_banner()
+        if not args or args[0].startswith("--"):
+            print("Usage: nightowl apimap <base-url> [--routes r1,r2,...] [--json]")
+            return 2
+        from nightowl_pkg.apimap import cmd_apimap
+        base = args[0]
+        routes = None
+        if "--routes" in args:
+            i = args.index("--routes")
+            routes = args[i + 1] if i + 1 < len(args) else None
+        cmd_apimap(base, routes=routes, json_out="--json" in args)
+        return 0
 
     # ── Hardening / Privacy / SCA ────────────────────────────────────────
     if cmd in ("hardening", "privacy", "sca"):

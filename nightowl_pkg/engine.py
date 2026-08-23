@@ -16,7 +16,7 @@ Commands:
   nightowl proxy              Network proxy setup
 """
 
-__version__ = "8.2.3"
+__version__ = "8.3.0"
 
 import os, sys, json, re, zipfile, hashlib, argparse, shutil, warnings
 from pathlib import Path
