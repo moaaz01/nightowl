@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from nightowl_pkg.validators import assess
 from nightowl_pkg.hardening import analyze_hardening, _signing_weaknesses
 from nightowl_pkg.privacy import analyze_privacy
 from nightowl_pkg.sca import analyze_sca, _lt, _detect_versions
@@ -305,3 +306,58 @@ class TestStaticOnlyGuardRegression(unittest.TestCase):
             "PaywallActivity")
         titles = [f["title"] for f in rep["findings"]]
         self.assertNotIn("Billing/license check over cleartext HTTP", titles)
+
+
+class TestPEMValidationShamCash(unittest.TestCase):
+    """v8.0.3: real-world ShamCash findings — unterminated PEM headers inside
+    Flutter .so are NOT keys; embedded public-key assets are trust anchors."""
+
+    def _fake_complete_privkey(self):
+        import base64 as b64
+        body = "\n".join(b64.b64encode(bytes([i % 256] * 48)).decode()
+                         for i in range(12))
+        return (f"-----BEGIN RSA PRIVATE KEY-----\n{body}\n"
+                f"-----END RSA PRIVATE KEY-----")
+
+    def test_unterminated_pem_in_binary_filtered(self):
+        # exactly the libapp.so case: header followed by binary garbage
+        val = "-----BEGIN PRIVATE KEY-----\x83\x11\"\x83Q\xa6\x9eCameraOwner"
+        r = assess("RSA Private Key", "-----BEGIN PRIVATE KEY-----",
+                   "binary noise after header", )
+        self.assertEqual(r["verdict"], "FILTERED")
+        self.assertTrue(any("unterminated" in x for x in r["reasons"]))
+
+    def test_complete_pem_private_key_confirmed(self):
+        key = self._fake_complete_privkey()
+        corpus = "some config\n" + key + "\ntrailer"
+        r = assess("RSA Private Key", "-----BEGIN RSA PRIVATE KEY-----",
+                   key[:200], full_text=corpus)
+        self.assertEqual(r["verdict"], "CONFIRMED")
+        self.assertTrue(any("COMPLETE PEM" in x for x in r["reasons"]))
+
+    def test_public_key_asset_is_trust_anchor(self):
+        import base64 as b64
+        body = "\n".join(b64.b64encode(bytes([7] * 48)).decode()
+                         for i in range(6))
+        key = (f"-----BEGIN PUBLIC KEY-----\n{body}\n"
+               f"-----END PUBLIC KEY-----")
+        corpus = ("assets/flutter_assets/assets/public_server_new.pem\n"
+                  + key)
+        r = assess("RSA Public Key", "-----BEGIN PUBLIC KEY-----",
+                   corpus[:200], full_text=corpus)
+        self.assertEqual(r["adjusted_risk"], "LOW")
+        self.assertTrue(any("trust-anchor" in x or "pinning" in x
+                            for x in r["reasons"]))
+
+    def test_flutter_ca_assets_detected_as_pinning(self):
+        from nightowl_pkg.authmap import map_authentication
+        txt = ("Loading certificate authority from assets/ca/ca.crt "
+               "and isrgrootx1.pem with SecurityContext.setTrustedCertificates "
+               "@POST(\"auth/login\") username password")
+        m = map_authentication(txt)
+        self.assertTrue(m["certificate_pinning"],
+                        "Flutter embedded CA pinning missed")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

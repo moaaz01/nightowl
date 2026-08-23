@@ -63,6 +63,18 @@ PINNING_PATTERNS = [
     r"CertificatePinner", r"pin-set", r"sha256/[A-Za-z0-9+/=]{20,}",
     r"network_security_config.*pin", r"TrustKit", r"sslSocketFactory\s*\(",
 ]
+# v8.0.3: Flutter/dart and embedded trust-anchor patterns — ShamCash shipped
+# assets/ca/ca.crt + isrgrootx1.pem + public_server_new.pem yet was reported
+# as "no pinning" because only OkHttp/XML markers were checked.
+PINNING_PATTERNS += [
+    r"(?i)securitycontext.*settrustedcertificates",
+    r"(?i)settrustedcertificatesbytes",
+    r"(?i)badcertificatehandler",
+    r"(?i)assets/(?:ca|certs?|pem)/",
+    r"(?i)\b(?:ca|server|public[_\-]?server)[_\-]?\.(?:crt|pem|cer)\b",
+    r"(?i)\bisrgrootx?\d*\.pem\b",
+    r"(?i)\brootca\d*\.(?:crt|pem|der)\b",
+]
 
 BASIC_AUTH_RE = re.compile(r"(?i)Credentials\.basic|Basic\s+[A-Za-z0-9+/=]{12,}")
 TOKEN_IN_URL_RE = re.compile(r"""[?&](access_token|token|auth|session_id|jwt)=""")

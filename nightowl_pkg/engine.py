@@ -16,7 +16,7 @@ Commands:
   nightowl proxy              Network proxy setup
 """
 
-__version__ = "8.0.2"
+__version__ = "8.0.3"
 
 import os, sys, json, re, zipfile, hashlib, argparse, shutil, warnings
 from pathlib import Path
@@ -1056,11 +1056,23 @@ class NightOwlAnalyzer:
                 'SSL certificate validation bypass detected',
                 'Never bypass TLS in production', ssl))
         dbg = [s for s in DEBUG_F if s in txt]
-        if dbg:
-            risk = 'MEDIUM' if is_debug else 'HIGH'
-            issues.append(_iss('Debug Mode', risk,
-                f'Debug flags found (debug_build={is_debug})',
-                'Disable debug in production builds', dbg))
+        # v8.0.3: real debuggable build vs mere instrumentation strings.
+        # Flutter engines ship 'StrictMode'/'Log.d(' strings in release apps;
+        # only an explicit debuggable=true (or BuildConfig.DEBUG literal)
+        # warrants HIGH. Otherwise it's informational noise.
+        real_debuggable = bool(re.search(
+            r'debuggable\s*=\s*"?true|BuildConfig\.DEBUG\s*[=!]=?\s*(true|1)',
+            txt, re.IGNORECASE))
+        is_debug = is_debug or real_debuggable
+        if dbg and real_debuggable:
+            issues.append(_iss('Debug Mode', 'HIGH',
+                'Application is explicitly debuggable',
+                'Set android:debuggable=false for release builds', dbg))
+        elif dbg:
+            issues.append(_iss('Debug instrumentation strings', 'INFO',
+                'Engine/library debug strings present but app is not '
+                'debuggable (debug_build=false)',
+                'Informational — no action required', dbg[:4]))
         cry = [c for c in WEAK_C if c in txt]
         if cry:
             issues.append(_iss('Weak Crypto', 'HIGH',
@@ -1135,7 +1147,14 @@ class NightOwlAnalyzer:
         if 'Debug Mode' in issue_titles and 'WebView JS Enabled' in issue_titles:
             combos.append(('HIGH', 'Debug + WebView JS',
                           'Remote code execution via debuggable WebView', 'WebView'))
-        if 'Weak Crypto' in issue_titles and self.d['secrets']:
+        # v8.0.3: the combo only makes sense when a CONFIRMED sensitive
+        # secret exists — a public API-key identifier doesn't count.
+        confirmed_sensitive = [
+            s for s in self.d['secrets']
+            if s.get('verdict') == 'CONFIRMED'
+            and s.get('risk') in ('HIGH', 'CRITICAL')
+        ]
+        if 'Weak Crypto' in issue_titles and confirmed_sensitive:
             combos.append(('HIGH', 'Weak Crypto + Hardcoded Secrets',
                           'Secrets protected by weak encryption', 'Secrets'))
 
@@ -1267,9 +1286,13 @@ class NightOwlAnalyzer:
             add('Critical Permissions', 'CRITICAL',
                 f'{len(crits)} critical: {names}',
                 'Justify each permission', 'Permissions')
-        if len(dp) > 5:
+        # v8.0.3: count only genuinely risky permissions — INFO entries like
+        # INTERNET/WAKE_LOCK must not inflate the "excessive" verdict.
+        risky_dp = [p for p in dp if p.get('risk') in ('CRITICAL', 'HIGH',
+                                                       'MEDIUM')]
+        if len(risky_dp) > 5:
             add('Excessive Permissions', 'MEDIUM',
-                f'{len(dp)} dangerous permissions',
+                f'{len(risky_dp)} dangerous permissions',
                 'Apply least privilege principle', 'Permissions')
         http = [u for u in self.d['endpoints']['urls'] if u.startswith('http://')]
         if len(http) > 2:

@@ -268,6 +268,54 @@ def _v_gcp_api_key(val, ctx):
     return True, "Google API key (public client identifier - verify restrictions)", "MEDIUM"
 
 
+# ── v8.0.3: PEM structural validation --------------------------------------
+# ShamCash lesson: "-----BEGIN PRIVATE KEY-----" appearing inside a Flutter
+# .so with binary garbage after it is NOT a key. A real PEM block needs its
+# matching END marker and a valid base64 body. Also: complete PUBLIC KEY
+# blocks shipped as .pem/.crt assets are trust anchors (pinning), not secrets.
+PEM_LABEL_RE = re.compile(r"-----BEGIN ([A-Z0-9 ]+)-----")
+
+
+def _v_pem(val, ctx, full_text=None):
+    m = PEM_LABEL_RE.match(val)
+    if not m:
+        return None, "", None
+    label = m.group(1)
+    end_marker = f"-----END {label}-----"
+
+    search_space = ctx
+    if end_marker not in search_space and full_text:
+        i = full_text.find(val[:48])
+        if i != -1:
+            # include leading context: pinning-asset filenames sit BEFORE
+            # the PEM block (e.g. assets/ca/ca.crt)
+            back = max(0, i - 1500)
+            search_space = full_text[back:i + len(val) + 6000]
+
+    start_i = search_space.find(val[:len(f"-----BEGIN {label}-----")] or val)
+    begin_tag = f"-----BEGIN {label}-----"
+    s = search_space.find(begin_tag)
+    e = search_space.find(end_marker)
+    if s != -1 and e > s:
+        body = search_space[s + len(begin_tag):e]
+        lines = [ln.strip() for ln in body.splitlines() if ln.strip()]
+        if len(lines) >= 3 and all(
+                re.fullmatch(r"[A-Za-z0-9+/]+={0,2}", ln) for ln in lines):
+            if "PRIVATE" in label:
+                return True, "COMPLETE PEM private-key block (base64 body intact)", None
+            if re.search(r"(?i)(assets?/|\.pem\b|\.crt\b|public[_\-]?server|"
+                         r"trust|ca\.)", search_space):
+                return (True,
+                        "embedded public-key/trust-anchor asset (pinning material)",
+                        "LOW")
+            return True, "complete PEM block (public material)", "LOW"
+
+    if "PRIVATE" in label:
+        return False, ("unterminated PEM header - string fragment inside "
+                       "binary/library data, NOT an extractable key"), "LOW"
+    return False, "incomplete PEM block", "LOW"
+
+
 VALIDATOR_MAP = {
     "AWS Access Key": _v_aws_access_key,
     "Amazon AWS Access Key": _v_aws_access_key,
@@ -337,9 +385,9 @@ def assess(label, value, context, position=None, full_text=None, base_risk="HIGH
         reasons.append(f"placeholder/template marker: {placeholder_hits[0]}")
 
     # 3. Structural validation ---------------------------------------------
-    validator = VALIDATOR_MAP.get(label)
-    if validator:
-        passed, note, ro = validator(val, context)
+    # v8.0.3: PEM blocks need the full corpus to find their END marker
+    if "KEY-----" in val or val.startswith("-----BEGIN"):
+        passed, note, ro = _v_pem(val, context, full_text)
         if passed is True:
             conf += 25
             reasons.append(note)
@@ -347,13 +395,29 @@ def assess(label, value, context, position=None, full_text=None, base_risk="HIGH
             conf -= 45
             reasons.append(note)
         if ro:
-            new = RANK.get(ro, RANK.get(risk, 99))
-            old = RANK.get(risk, 99)
-            if new > old:
+            new_r = RANK.get(ro, RANK.get(risk, 99))
+            old_r = RANK.get(risk, 99)
+            if new_r > old_r:
                 risk = ro
                 reasons.append(f"risk adjusted {risk} -> {ro}")
-            elif new < old and ro != "LOW":
-                risk = ro
+    else:
+        validator = VALIDATOR_MAP.get(label)
+        if validator:
+            passed, note, ro = validator(val, context)
+            if passed is True:
+                conf += 25
+                reasons.append(note)
+            elif passed is False:
+                conf -= 45
+                reasons.append(note)
+            if ro:
+                new_r = RANK.get(ro, RANK.get(risk, 99))
+                old_r = RANK.get(risk, 99)
+                if new_r > old_r:
+                    risk = ro
+                    reasons.append(f"risk adjusted {risk} -> {ro}")
+                elif new_r < old_r and ro != "LOW":
+                    risk = ro
 
     # 3b. Marker words inside the value itself (partial-token lookalikes) --
     vm = re.search(
