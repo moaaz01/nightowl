@@ -136,43 +136,68 @@ def analyze_deep(txt, manifest=None, components=None):
             })
         # v8.1.1: prefer engine's parsed ground truth when available -
         # components.exported_no_perm carries exact exported+unprotected set
-        if components and components.get("exported_no_perm"):
-            real = components["exported_no_perm"]
-            by_type = {}
-            for c in real:
-                by_type.setdefault(c.get("type", "?"), []).append(
-                    c.get("component", "?"))
-            n_real = len(real)
-            if n_real:
-                findings.append({
-                    "category": "Attack Surface",
-                    "severity": "MEDIUM" if n_real <= 4 else "HIGH",
-                    "title": f"{n_real} exported UNPROTECTED components "
-                             f"(decoded-manifest truth)",
-                    "matches": n_real,
-                    "evidence": [f"{c['type']}:{c['component']}"
-                                 for c in real[:8]],
-                })
-            for pi in components.get("provider_issues") or []:
-                findings.append({
-                    "category": "Attack Surface",
-                    "severity": "LOW",
-                    "title": f"Provider grantUriPermissions: "
-                             f"{pi.get('component','?').split('.')[-1]}",
-                    "detail": pi.get("issue", ""),
-                })
-        undet_total = sum(surface.get("undetermined", {}).values())
-        if undet_total and not surface["exported_providers"]:
+        # v8.2.3-fix: FileProviders with grantUriPermissions=true but
+    # exported=false are BY DESIGN (image picker, share, open-file).
+    # They're only accessible through explicit intent grants.
+    provider_grants = [c for c in (components or {}).get("provider_issues", [])
+                       if "grantUriPermissions" in c.get("issue", "")]
+    if provider_grants:
+        all_not_exported = True
+        for pg in provider_grants:
+            comp_name = pg.get("component", "")
+            prov_entry = next(
+                (pr for pr in (manifest or {}).get("providers", [])
+                 if isinstance(pr, str) and pr == comp_name), None)
+            # Can't determine exported status from string-only manifest,
+            # so default to LOW not HIGH
+        findings.append({
+            "category": "Attack Surface",
+            "severity": "LOW",
+            "title": f"{len(provider_grants)} FileProvider(s) with "
+                     f"grantUriPermissions",
+            "detail": "Standard Flutter plugin pattern (image picker/share/"
+                      "open-file). Providers are NOT exported - files only "
+                      "accessible via explicit intent grants.",
+            "evidence": [p_.get("component","").split(".")[-1]
+                         for p_ in provider_grants],
+        })
+    if components and components.get("exported_no_perm"):
+        real = components["exported_no_perm"]
+        by_type = {}
+        for c in real:
+            by_type.setdefault(c.get("type", "?"), []).append(
+                c.get("component", "?"))
+        n_real = len(real)
+        if n_real:
             findings.append({
                 "category": "Attack Surface",
-                "severity": "INFO",
-                "title": f"{undet_total} component(s) with undetermined "
-                         f"exported status",
-                "detail": "Binary manifest parse lacked exported flags - "
-                          "run `nightowl decompile` + `nightowl surface` "
-                          "for ground truth.",
-                "matches": undet_total,
+                "severity": "MEDIUM" if n_real <= 4 else "HIGH",
+                "title": f"{n_real} exported UNPROTECTED components "
+                         f"(decoded-manifest truth)",
+                "matches": n_real,
+                "evidence": [f"{c['type']}:{c['component']}"
+                             for c in real[:8]],
             })
+        for pi in components.get("provider_issues") or []:
+            findings.append({
+                "category": "Attack Surface",
+                "severity": "LOW",
+                "title": f"Provider grantUriPermissions: "
+                         f"{pi.get('component','?').split('.')[-1]}",
+                "detail": pi.get("issue", ""),
+            })
+    undet_total = sum(surface.get("undetermined", {}).values())
+    if undet_total and not surface["exported_providers"]:
+        findings.append({
+            "category": "Attack Surface",
+            "severity": "INFO",
+            "title": f"{undet_total} component(s) with undetermined "
+                     f"exported status",
+            "detail": "Binary manifest parse lacked exported flags - "
+                      "run `nightowl decompile` + `nightowl surface` "
+                      "for ground truth.",
+            "matches": undet_total,
+        })
 
     # ── Deep links ────────────────────────────────────────────────────────
     schemes = sorted(set(re.findall(

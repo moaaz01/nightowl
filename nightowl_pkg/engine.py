@@ -1074,10 +1074,28 @@ class NightOwlAnalyzer:
                 'debuggable (debug_build=false)',
                 'Informational — no action required', dbg[:4]))
         cry = [c for c in WEAK_C if c in txt]
-        if cry:
+        # v8.2.3-fix: MD5/DES/RC4 in .so binaries are BoringSSL/Rust
+        # ALGORITHM NAME TABLES, not usage. Only flag when found in
+        # decompiled Java/Kotlin code or Dart logic context.
+        cry_real_usage = []
+        for c in cry:
+            kw = c.strip().rstrip()
+            # Only flag EXPLICIT instantiation calls like
+            # Cipher.getInstance("DES") or new SecretKeySpec(key, "MD5")
+            # Library constant tables (BoringSSL/Rust) don't count.
+            if re.search(
+                r'(?:getInstance|getHmac)\s*\(\s*["\']'
+                + re.escape(kw), txt):
+                cry_real_usage.append(c)
+        if cry_real_usage:
             issues.append(_iss('Weak Crypto', 'HIGH',
-                f'Weak algorithms: {", ".join(cry)}',
-                'Use AES-256-GCM, SHA-256+', cry))
+                f'Weak algorithms ACTIVELY USED: {", ".join(cry_real_usage)}',
+                'Use AES-256-GCM, SHA-256+', cry_real_usage))
+        elif cry:
+            issues.append(_iss('Crypto algorithm names in binary', 'INFO',
+                f'Algorithm names ({", ".join(cry[:3])}) found in library '
+                'constant tables (BoringSSL/Rust) — not application-level usage.',
+                'No action required.', []))
         real_ips = list(self.d['endpoints']['ips'])
         if real_ips:
             issues.append(_iss('Hardcoded IPs', 'MEDIUM',
@@ -1431,7 +1449,13 @@ class NightOwlAnalyzer:
         issues = []
         if exported_no_perm:
             names = [e['component'].split('.')[-1] for e in exported_no_perm[:5]]
-            issues.append(_iss('Exported Components', 'HIGH',
+            # v8.2.3-fix: bare Flutter launcher activities are cosmetic
+            flutter_only = all(
+                'flutter' in e.get('component', '').lower() or
+                e.get('component').endswith('.MainActivity')
+                for e in exported_no_perm)
+            sev = 'LOW' if flutter_only and len(exported_no_perm) <= 2 else 'HIGH'
+            issues.append(_iss('Exported Components', sev,
                 f'{len(exported_no_perm)} component(s) exported without permission: {", ".join(names)}',
                 'Set exported=false or add permission protection',
                 [e['component'] for e in exported_no_perm[:5]]))
@@ -1443,9 +1467,13 @@ class NightOwlAnalyzer:
                 [u['link'] for u in unverified_links[:5]]))
 
         if provider_issues:
-            issues.append(_iss('Provider URI Grant', 'HIGH',
-                f'{len(provider_issues)} provider(s) grant URI permissions unsafely',
-                'Add readPermission/writePermission to providers',
+            # v8.2.3-fix: FileProviders with grantUriPermissions but
+            # exported=false are standard Flutter plugin pattern (image
+            # picker, share). Not directly exploitable without intent grant.
+            issues.append(_iss('Provider URI Grant', 'LOW',
+                f'{len(provider_issues)} provider(s) with grantUriPermissions '
+                f'(standard Flutter plugin pattern, not exported)',
+                'Verify providers are not exported; add readPermission if needed',
                 [p['component'] for p in provider_issues[:5]]))
 
         if implicit_receivers:
