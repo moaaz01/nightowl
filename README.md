@@ -77,14 +77,30 @@ Rejected candidates are never silently dropped — they are preserved in a
 
 ## Installation
 
+**From source:**
 ```bash
 git clone https://github.com/moaaz01/nightowl.git
 cd nightowl
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-bash scripts/install-ultimate.sh        # optional external tools
-./nightowl preflight                    # verify environment
+pip install -e ".[full]"
+nightowl preflight                    # verify environment
 ```
+
+**Or install as a CLI tool (pipx/pip):**
+```bash
+pipx install nightowl-security         # then just: nightowl <command>
+export NIGHTOWL_HOME=~/.nightowl       # where reports/artifacts go
+```
+
+**Or Docker (jadx/apktool baked in):**
+```bash
+docker build -t nightowl .
+docker run --rm -v "$PWD:/data" nightowl full /data/app.apk --json
+```
+
+Deep documentation: [architecture](docs/architecture.md) ·
+[JSON contract](docs/json-contract.md) ·
+[MCP server](docs/mcp.md)
 
 **Requirements:** Python 3.12+. Optional but recommended:
 [jadx](https://github.com/skylot/jadx),
@@ -94,6 +110,10 @@ bash scripts/install-ultimate.sh        # optional external tools
 [Frida](https://frida.re) for dynamic work.
 Heavy Python deps (androguard, rich) are optional — core string-based scans run
 on a bare interpreter.
+
+**Hostile-input mode:** scanning untrusted samples? Use `--static-only`
+(or `NIGHTOWL_STATIC_ONLY=1`) to disable every command that executes external
+parsers or touches devices. See [SECURITY.md](SECURITY.md).
 
 ## Quick Start
 
