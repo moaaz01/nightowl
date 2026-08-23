@@ -1,0 +1,12 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+targets
+workspace
+tests/targets
+*.apk
+*.xapk
+.github
+docs
