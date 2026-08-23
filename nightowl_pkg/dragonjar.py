@@ -7,7 +7,10 @@ from datetime import datetime
 from collections import defaultdict
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS_DJ = ROOT / "scripts-dragonjar"
+# M-07: DragonJAR resources are packaged data now (pip/Docker installs have
+# no repo layout); fall back to the historical location when present.
+_PKG_DATA = Path(__file__).resolve().parent / "dragonjar_data"
+SCRIPTS_DJ = _PKG_DATA if _PKG_DATA.exists() else ROOT / "scripts-dragonjar"
 TARGETS = ROOT / "targets"
 WORKSPACE = ROOT / "workspace"
 
