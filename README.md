@@ -75,6 +75,7 @@ Rejected candidates are never silently dropped — they are preserved in a
 | Regression diffing | `diff` | Compare two saved scans: score delta, IMPROVED/REGRESSED verdict, added/resolved secrets & weaknesses per layer |
 | Dart AOT intelligence | `dart` | Flutter libapp.so analysis: package imports (fast_rsa/pointycastle…), hidden API base URLs & routes, RSA padding audit (PKCS#1 v1.5 vs OAEP), sensitive business functions, HTML-entity-table detection that defuses fake PEM fragments |
 | CryptoScope | `cryptoscope` | Source-aware crypto audit with provenance classification (APP CODE / LIBRARY / OBFUSCATED), cipher mode+padding inventory, RSA padding findings, hardcoded key literals — file:line evidence |
+| Wallet/fraud-surface | `billing` v8.2 | Digital-wallet architecture mapping (deposit flows, third-party funding rails like USDT/Binance/manual-proof), request-signing audit scoped to the Dart snapshot, fraud-sensitive flow flags |
 | Attack-surface map | `surface` | Exported-component exploitation map from decoded manifest: deep links, protections, ready adb recipes |
 | Source secret scan | `secrets-src` | Validation-engine secret scan across the decompiled tree with file:line provenance |
 | Reporting | `--save`, `report` | Interactive single-file HTML + Markdown + JSON (see [Reports](#reports)) |

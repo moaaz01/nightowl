@@ -69,6 +69,30 @@ DEBUG_UNLOCK_PATTERNS = [
 PAYWALL_UI_HINTS = ["paywall", "upgrade_screen", "UpgradeActivity",
                     "PaywallActivity", "subscribe_button", "buy_premium"]
 
+# v8.2.0: wallet/deposit systems (digital wallets, not subscriptions)
+WALLET_SYSTEM_RES = [
+    (r"/wallet/(?:deposits?|methods?|proof|manual)", "deposit flow"),
+    (r"/wallet/(?:binance|usdt|shamcash|kazawallet|syriatel)",
+     "third-party funding integration"),
+    (r"(?i)(?:quick[_\-]?topup|topup[_\-]?screen|deposit[_\-]?screen)",
+     "top-up UI screens"),
+    (r"(?i)balance_before|ledger|transaction_log", "server-side ledger field"),
+    (r"(?i)/kyc/(?:submit|status|document)", "KYC verification flow"),
+    (r"(?i)(?:upload|submit).{0,20}(?:proof|receipt|screenshot)",
+     "payment-proof upload"),
+]
+
+FRAUD_SENSITIVE_FLOWS = [
+    ("/wallet/proof", "MEDIUM",
+     "Manual payment-proof upload flow - classic first-party fraud vector "
+     "(forged transfer screenshots). Verify server-side OCR/review pipeline "
+     "and amount reconciliation."),
+    ("no-request-signing-detected", "HIGH",
+     "No HMAC/signature/nonce markers found in the client. If the server "
+     "does not independently sign/verify deposit and claim requests, they "
+     "are replayable/tamperable in transit. Confirm server-side controls."),
+]
+
 
 def _scan_text(txt):
     """Run all static patterns over one text blob. Returns dict of hits."""
@@ -79,6 +103,8 @@ def _scan_text(txt):
         "debug_switches": [],
         "paywall_ui": [],
         "billing_urls": [],
+        "wallet_flows": [],
+        "signing_markers": 0,
     }
     for sdk, markers in BILLING_SDKS.items():
         found = sorted({m for m in markers if m in txt})
@@ -101,6 +127,14 @@ def _scan_text(txt):
     for h in PAYWALL_UI_HINTS:
         if h.lower() in txt.lower():
             hits["paywall_ui"].append(h)
+    for pat, label in WALLET_SYSTEM_RES:
+        for m in re.finditer(pat, txt):
+            hits["wallet_flows"].append(f"{label}::{m.group(0)[:80]}")
+    # v8.2.1-calibration: 'signature' alone matches APK-signing APIs in
+    # every app; only REQUEST-crypto markers count.
+    hits["signing_markers"] = len(re.findall(
+        r"(?i)\bhmac\b|x-signature|\bapi[_\-]?secret\b|\bnonce\b"
+        r"|(?:request|payload)[_\-]?signature", txt))
     url_pat = re.compile(r'https?://[^\s"\']{6,200}')
     for u in set(url_pat.findall(txt)):
         low = u.lower()
@@ -110,12 +144,19 @@ def _scan_text(txt):
     return hits
 
 
-def analyze_billing(txt, info=None):
+def analyze_billing(txt, info=None, dart_txt=None):
     """Full subscription-enforcement assessment over the extracted text corpus.
 
-    Returns structured report dict.
+    dart_txt: optional Flutter/Dart snapshot corpus - request signing in a
+    Flutter app lives HERE, so signing-marker absence is judged on this
+    scope (Java-side 'signature' strings are APK-signing APIs, not requests).
     """
     h = _scan_text(txt)
+    signing_scope = dart_txt if dart_txt is not None else txt
+    h["signing_markers"] = len(re.findall(
+        r"(?i)\bhmac\b|x-signature|\bapi[_\-]?secret\b|\bnonce\b"
+        r"|(?:request|payload)[_\-]?signature", signing_scope))
+    h["signing_scope"] = "dart-snapshot" if dart_txt is not None else "full-corpus"
     findings = []
 
     monetized = bool(h["sdks"]) or bool(h["entitlements"]) or \
@@ -153,6 +194,25 @@ def analyze_billing(txt, info=None):
             "MASVS-RESILIENCE-2",
             [e["pattern"] + " :: " + e["match"][:80] for e in h["entitlements"]],
         )
+
+    if h.get("wallet_flows"):
+        flows = sorted({f.split("::")[0] for f in h["wallet_flows"]})
+        add("INFO", f"Wallet/deposit system ({len(flows)} flow type(s))",
+            "Digital-wallet architecture detected: " +
+            ", ".join(flows[:6]) + ".",
+            "MASVS-NETWORK", h["wallet_flows"][:8])
+    if h.get("signing_markers", 0) == 0 and (
+            h.get("wallet_flows") or monetized):
+        sev, title, why = next((x[1], x[0], x[2])
+                               for x in FRAUD_SENSITIVE_FLOWS
+                               if x[0] == "no-request-signing-detected")
+        add(sev, title, why, "MASVS-NETWORK-1",
+            [f"hmac/signature/nonce scan: 0 hits in {h['signing_scope']}"])
+    for marker, sev, why in FRAUD_SENSITIVE_FLOWS:
+        if marker != "no-request-signing-detected" and any(
+                marker in w for w in h.get("wallet_flows", [])):
+            add(sev, f"Fraud-sensitive flow: {marker}", why,
+                "MASVS-RESILIENCE", [marker])
 
     if h["sdks"] and local_only:
         sdk_names = ", ".join(h["sdks"])
@@ -213,6 +273,8 @@ def analyze_billing(txt, info=None):
         "paywall_resources": h["paywall_ui"],
         "billing_urls": sorted(set(h["billing_urls"]))[:15],
         "findings": findings,
+        "signing_scope": h.get("signing_scope"),
+        "request_signing_markers": h.get("signing_markers", 0),
         "enforcement_model": (
             "unknown" if not monetized else
             "local-only" if local_only else
@@ -342,7 +404,13 @@ def cmd_billing(apk_path: str, analyzer=None, json_out=False):
     if az is None:
         az = nw.NightOwlAnalyzer(apk_path)
         az.extract_strings()
-    rep = analyze_billing(az.txt, az.d.get("info"))
+    try:
+        from .dart import extract_dart_strings
+        dart_corpus = "\n".join(
+            extract_dart_strings(str(az.path)).values()) or None
+    except Exception:
+        dart_corpus = None
+    rep = analyze_billing(az.txt, az.d.get("info"), dart_txt=dart_corpus)
     pkg = az.d.get("info", {}).get("package") or "com.target.app"
     rep["package"] = pkg
 

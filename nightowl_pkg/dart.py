@@ -105,10 +105,20 @@ def analyze_dart(apk_path, native_libs=None):
     report["api_base_urls"].sort(
         key=lambda u: (0 if any(k in u.lower() for k in
                                 ("api", ".sy", "pay", "bank")) else 1))
-    routes = sorted(set(re.findall(
-        r"['\"](/[a-zA-Z0-9_\-]*(?:api|user|auth|payment|wallet|transaction|"
-        r"transfer|account|session)[a-zA-Z0-9_/\-{}]*)['\"]", txt, re.I)))
-    report["dart_routes"] = routes[:40]
+    # v8.2.0: raw path harvesting (Dart snapshots store paths WITHOUT
+    # quotes - quoted-only regexes miss entire route trees)
+    raw_paths = set(re.findall(
+        r"""(?:^|[\s"'])((?:/[a-z0-9_\-]+){1,4})(?:[\s"']|$)""", txt))
+    noise_re = re.compile(r"dart$|flutter|sources|^/src/|usr|system|"
+                          r"^/android|java$|com/|org/|io/", re.I)
+    interesting = [p for p in sorted(raw_paths)
+                   if not noise_re.search(p) and len(p) > 3]
+    money = [p for p in interesting if re.search(
+        r"wallet|deposit|kyc|order|auth|pay|user|account|device|notif|"
+        r"support|version|product|home", p, re.I)]
+    report["dart_routes"] = (money + [p for p in interesting
+                                      if p not in money])[:60]
+    report["route_count"] = len(interesting)
 
     # ── RSA padding audit ─────────────────────────────────────────────
     for pat, name, verdict in RSA_PADDING_RES:

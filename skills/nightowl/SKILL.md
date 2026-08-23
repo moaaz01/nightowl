@@ -25,6 +25,7 @@ Unified Android security analysis for agents. Every command supports `--json`
 | Find hardcoded keys/tokens | `nightowl secrets <apk> --json` |
 | Map login & token flows | `nightowl authmap <apk> --json` |
 | Can premium be unlocked client-side? | `nightowl billing <apk> --json` |
+| Wallet/deposit/fraud surface? | same command - v8.2 maps deposit rails, KYC, proof-upload and request-signing gaps scoped to the Dart snapshot |
 | Deep-link/WebView/crypto/intent issues | `nightowl deepscan <apk> --json` |
 | Is it packed/obfuscated? (APKiD-style) | `nightowl hardening <apk> --json` |
 | Which trackers/privacy SDKs? | `nightowl privacy <apk> --json` |
