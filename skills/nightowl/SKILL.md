@@ -39,13 +39,18 @@ Unified Android security analysis for agents. Every command supports `--json`
 ## Invocation
 
 ```bash
-cd ~/nightowl_new          # tool root
+# from a git clone
 ./nightowl <command> <apk> --json
+
+# or after `pipx install nightowl-security`
+nightowl <command> <apk> --json
+export NIGHTOWL_HOME=~/.nightowl   # where reports/artifacts are written
 ```
 
 APK paths auto-resolve against `./targets/`. Python 3.12+; heavy deps optional
 (androguard, rich); external tools (jadx/apktool/semgrep/adb/frida) detected by
-`./nightowl preflight`.
+`./nightowl preflight`. Set `NIGHTOWL_STATIC_ONLY=1` when handling untrusted
+samples to block every command that executes parsers or touches devices.
 
 ## JSON contracts
 
@@ -65,7 +70,10 @@ APK paths auto-resolve against `./targets/`. Python 3.12+; heavy deps optional
   "authmap": { "flows": [...], "token_lifecycle": {}, "weaknesses": [...] },
   "billing": { "enforcement_model": "local-only|server-backed|sdk-managed",
                "findings": [...], "verification_script": "path.js" },
-  "deepscan":{ "attack_surface": {}, "uri_schemes": [], "findings": [...] }
+  "deepscan":{ "attack_surface": {}, "uri_schemes": [], "findings": [...] },
+  "hardening":{ "packers_protectors": {}, "anti_analysis": {} },
+  "privacy": { "trackers": {}, "data_collection_permissions": [] },
+  "sca":     { "vulnerable": [], "sbom": {} }
 }
 ```
 
@@ -168,7 +176,8 @@ proxy — anything that speaks HTTP(S) interception on host:port.
 claude mcp add nightowl -- ~/nightowl_new/nightowl mcp
 ```
 Tools: `nightowl_full`, `nightowl_secrets`, `nightowl_authmap`,
-`nightowl_billing`, `nightowl_deepscan`, `nightowl_endpoints`,
+`nightowl_billing`, `nightowl_deepscan`, `nightowl_hardening`,
+`nightowl_privacy`, `nightowl_sca`, `nightowl_diff`, `nightowl_endpoints`,
 `nightowl_decompile`, `nightowl_preflight`. Stdout carries only JSON-RPC —
 safe for strict hosts.
 

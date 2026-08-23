@@ -59,8 +59,10 @@ using NightOwl programmatically. Full contracts: [`skills/nightowl/SKILL.md`](sk
 claude mcp add nightowl -- ~/nightowl_new/nightowl mcp
 ```
 Tools: `nightowl_full`, `nightowl_secrets`, `nightowl_authmap`,
-`nightowl_billing`, `nightowl_deepscan`, `nightowl_endpoints`,
-`nightowl_decompile`, `nightowl_preflight`.
+`nightowl_billing`, `nightowl_deepscan`, `nightowl_hardening`,
+`nightowl_privacy`, `nightowl_sca`, `nightowl_diff`, `nightowl_endpoints`,
+`nightowl_decompile`, `nightowl_preflight`. Stdout carries only JSON-RPC —
+safe for strict hosts.
 
 ## Timeouts
 
