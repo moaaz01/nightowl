@@ -87,10 +87,16 @@ FRAUD_SENSITIVE_FLOWS = [
      "Manual payment-proof upload flow - classic first-party fraud vector "
      "(forged transfer screenshots). Verify server-side OCR/review pipeline "
      "and amount reconciliation."),
-    ("no-request-signing-detected", "HIGH",
-     "No HMAC/signature/nonce markers found in the client. If the server "
-     "does not independently sign/verify deposit and claim requests, they "
-     "are replayable/tamperable in transit. Confirm server-side controls."),
+    # v8.2.1: live-probe calibration (MaxStore): auth IS enforced (401 on
+    # wallet/kyc/orders without token), so unsigned requests are only
+    # exploitable FROM an authenticated session -> MEDIUM conditional,
+    # escalating to HIGH only if server-side replay/tamper checks are absent.
+    ("no-request-signing-detected", "MEDIUM",
+     "No HMAC/signature/nonce markers in the client. Auth is enforced at "
+     "the gateway, but without request signing a valid session token can "
+     "tamper amounts/IDs unless the server validates them independently. "
+     "ESCALATE TO HIGH after an authenticated tamper test confirms missing "
+     "server-side checks."),
 ]
 
 

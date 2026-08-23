@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.2.0"
+VERSION = "8.2.1"
 
 LOGO = r"""
    ,_         _,
