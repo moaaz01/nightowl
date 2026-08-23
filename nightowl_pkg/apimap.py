@@ -71,6 +71,8 @@ def analyze_api_security(base_url, routes=None):
         "security_headers": {},
         "error_handling": [],
         "tls_info": {},
+        "rate_limiting": {},
+        "backend_framework": "",
         "findings": [],
         "score": 100,
     }
@@ -236,6 +238,69 @@ def analyze_api_security(base_url, routes=None):
                 "evidence": [f'{r["route"]} -> {r["unauthenticated_status"]}: '
                              f'{r["body_preview"]}' for r in sensitive_open[:5]],
             })
+
+    # ── v8.3: Rate limiting assessment ────────────────────────────────
+    if base_url and "/api" in base_url:
+        rl_results = []
+        # Test on a known-sensitive endpoint or the base itself
+        test_ep = routes[0] if routes else "/version"
+        codes = []
+        for _ in range(15):
+            raw_r = _curl(f"{base_url}{test_ep}")
+            status_line = next(
+                (l for l in raw_r.splitlines() if l.startswith("HTTP/")), "")
+            code_str = status_line.split(" ")[1] if len(
+                status_line.split(" ")) > 1 else "?"
+            codes.append(code_str)
+        unique_codes = sorted(set(codes))
+        has_429 = "429" in unique_codes
+        all_same = len(unique_codes) == 1
+        report["rate_limiting"] = {
+            "endpoint_tested": test_ep,
+            "requests_sent": len(codes),
+            "unique_status_codes": unique_codes,
+            "rate_limited": has_429,
+            "all_same_response": all_same,
+        }
+        if not has_429 and not all_same:
+            findings.append({
+                "severity": "MEDIUM",
+                "title": "Inconsistent responses under load",
+                "detail": f"Multiple response codes: {unique_codes}",
+            })
+        if not has_429 and all_same and "401" in unique_codes:
+            findings.append({
+                "severity": "HIGH",
+                "title": "No rate limiting on authenticated-endpoint probes",
+                "detail": f"{len(codes)} rapid requests to {test_ep} "
+                          f"returned {unique_codes} without any throttling. "
+                          f"Token brute-forcing is feasible.",
+            })
+        elif not has_429 and all_same:
+            findings.append({
+                "severity": "LOW",
+                "title": "No rate limiting detected on public endpoints",
+                "detail": f"{len(codes)} requests all returned "
+                          f"{unique_codes}. DDoS/abuse protection unclear.",
+            })
+
+    # ── FastAPI/Backend framework fingerprint ─────────────────────────
+    # Send empty POST to detect validation-style errors
+    try:
+        r = subprocess.run(
+            ["curl", "-sS", "-m", "6", "-X", "POST",
+             "-H", "Content-Type: application/json", "-d", "{}",
+             f"{base_url}/auth/link"],
+            capture_output=True, text=True, timeout=8)
+        body = r.stdout[:200]
+        if '"type":"missing"' in body or '"loc":' in body:
+            report["backend_framework"] = "FastAPI (Python)"
+        elif "Laravel" in body or "Illuminate" in body:
+            report["backend_framework"] = "Laravel (PHP)"
+        elif "ValidationError" in body:
+            report["backend_framework"] = "Express/Joi (Node.js)"
+    except Exception:
+        pass
 
     # ── Score ────────────────────────────────────────────────────────
     penalty = 0
