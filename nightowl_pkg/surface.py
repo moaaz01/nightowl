@@ -12,6 +12,40 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
+
+# v8.1.1: exports that exist BY DESIGN of the vendor SDK - flagging them
+# HIGH every scan erodes analyst trust.
+KNOWN_BY_DESIGN_PREFIXES = (
+    "com.google.android.play.core.",
+    "androidx.profileinstaller.",
+)
+
+
+def _trivial_activity_note(jadx_src: Path | None, class_name: str):
+    """If decompiled activity is a bare Flutter/empty subclass with no
+    getIntent/extras handling, an exported status is cosmetic."""
+    if not jadx_src or not jadx_src.exists():
+        return None
+    for prefix in ("sources/", "", "app/"):
+        jf = jadx_src / (prefix + class_name.replace(".", "/") + ".java")
+        if jf.exists():
+            break
+    else:
+        return None
+    try:
+        code = jf.read_text(errors="ignore")
+    except Exception:
+        return None
+    body_lines = [l for l in code.splitlines()
+                  if l.strip() and not l.strip().startswith(("//", "*", "/*",
+                                                              "import ",
+                                                              "package "))]
+    sensitive = re.search(r"getIntent|getParcelableExtra|getStringExtra|"
+                          r"getData\(\)|onNewIntent", code)
+    if len(body_lines) <= 14 and not sensitive:
+        return ("trivial launcher subclass - no intent data handling found; "
+                "exported surface is cosmetic")
+    return None
 SEV_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
 
@@ -24,7 +58,7 @@ def _find_manifest(apktool_dir: Path):
     return None
 
 
-def analyze_surface(manifest_xml_path):
+def analyze_surface(manifest_xml_path, jadx_src=None):
     """Parse decoded manifest -> exported component map + adb recipes."""
     path = Path(manifest_xml_path)
     if not path.exists():
@@ -107,12 +141,30 @@ def analyze_surface(manifest_xml_path):
                              f'"{c["deeplinks"][0]}"'],
             })
         elif c["type"] in ("activity",) and unprotected:
+            trivial = _trivial_activity_note(jadx_src, c["name"])
+            if any(c["name"].startswith(pref) for pref
+                   in KNOWN_BY_DESIGN_PREFIXES):
+                sev, extra = "INFO", "vendor by-design export."
+            elif trivial:
+                sev, extra = "LOW", trivial
+            else:
+                sev, extra = "LOW", ""
             findings.append({
-                "severity": "LOW",
+                "severity": sev,
                 "title": f"Exported activity: {c['name']}",
-                "detail": "Launchable by other apps; confirm it never "
-                          "renders sensitive fragments on intent extras.",
+                "detail": ("Launchable by other apps; confirm it never "
+                           "renders sensitive fragments on intent extras."
+                           + (f" {extra}" if extra else "")),
             })
+        elif c["type"] == "service" and unprotected:
+            if any(c["name"].startswith(pref) for pref
+                   in KNOWN_BY_DESIGN_PREFIXES):
+                findings.append({
+                    "severity": "INFO",
+                    "title": f"Vendor by-design service export: "
+                             f"{c['name'].split('.')[-1]}",
+                    "detail": "Play Core asset-delivery pattern; expected.",
+                })
 
     # adb recipes (authorized lab only)
     recipes = []
@@ -154,7 +206,8 @@ def cmd_surface(apk_or_dir: str, json_out=False):
         print("[!] Decoded manifest not found. Run first:")
         print(f"    nightowl decompile {apk_or_dir}")
         return {"error": "no manifest"}
-    rep = analyze_surface(manifest)
+    jadx_dir = base.parent / "jadx-src" if base.name == "apktool" else None
+    rep = analyze_surface(manifest, jadx_src=jadx_dir)
     if json_out:
         print(json.dumps(rep, indent=2, ensure_ascii=False))
         return rep

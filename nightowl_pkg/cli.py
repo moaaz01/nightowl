@@ -49,7 +49,7 @@ nw.show_banner = lambda: None
 RICH = nw.RICH
 con = nw.con if RICH else None
 
-VERSION = "8.1.0"
+VERSION = "8.1.1"
 
 LOGO = r"""
    ,_         _,
@@ -699,7 +699,8 @@ def _attach_advanced_layers(az, save_mode=False):
         pass
     try:
         from nightowl_pkg.deepscan import analyze_deep, attach_cvss
-        az.d["deepscan"] = attach_cvss(analyze_deep(az.txt, az.d.get("manifest")))
+        az.d["deepscan"] = attach_cvss(analyze_deep(
+                az.txt, az.d.get("manifest"), az.d.get("components")))
     except Exception:
         pass
     try:
@@ -745,7 +746,7 @@ def _attach_advanced_layers(az, save_mode=False):
             from nightowl_pkg.surface import analyze_surface
             mf = apktool_dir / "AndroidManifest.xml"
             if mf.exists():
-                az.d["surface_map"] = analyze_surface(mf)
+                az.d["surface_map"] = analyze_surface(mf, jadx_src=jadx)
         except Exception:
             pass
 

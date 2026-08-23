@@ -76,7 +76,12 @@ PINNING_PATTERNS += [
     r"(?i)\brootca\d*\.(?:crt|pem|der)\b",
 ]
 
-BASIC_AUTH_RE = re.compile(r"(?i)Credentials\.basic|Basic\s+[A-Za-z0-9+/=]{12,}")
+# v8.1.1: bare 'Basic ' constants exist inside dart:io/http libraries of
+# EVERY Flutter app; require a real credential shape or a Credentials.basic(
+# call site, plus auth-flavoured context.
+BASIC_AUTH_RE = re.compile(
+    r"(?i)credentials\.basic\s*\(|"
+    r"Basic\s+[A-Za-z0-9+/=]{16,}")
 TOKEN_IN_URL_RE = re.compile(r"""[?&](access_token|token|auth|session_id|jwt)=""")
 CLEARTEXT_AUTH_RE = re.compile(
     r"http://[^\s\"']{0,120}(login|auth|token|session|signin|oauth)[^\s\"']{0,80}", re.I)
@@ -270,7 +275,12 @@ def map_authentication(txt):
             "detail": "Tokens in URLs leak via logs, referrers and proxies.",
             "masvs": "MASVS-AUTH-1",
         })
-    if BASIC_AUTH_RE.search(txt):
+    basic_ctx = ""
+    bm = BASIC_AUTH_RE.search(txt)
+    if bm:
+        basic_ctx = txt[max(0, bm.start()-120):bm.end()+120].lower()
+    if bm and any(k in basic_ctx for k in (
+            "password", "username", "user", "credential", "login", "auth")):
         weaknesses.append({
             "severity": "MEDIUM",
             "title": "HTTP Basic authentication in use",

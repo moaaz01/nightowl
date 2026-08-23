@@ -81,7 +81,7 @@ def _run_rules(rules, txt, category, findings):
             })
 
 
-def analyze_deep(txt, manifest=None):
+def analyze_deep(txt, manifest=None, components=None):
     """Run advanced static layers. `manifest` is the parsed manifest dict
     produced by the legacy engine (activities/services/receivers/providers)."""
     findings = []
@@ -89,29 +89,42 @@ def analyze_deep(txt, manifest=None):
     # ── Attack surface ────────────────────────────────────────────────────
     surface = {"exported_activities": [], "exported_services": [],
                "exported_receivers": [], "exported_providers": []}
+    # v8.1.1: provenance-critical fix. The legacy engine emits component
+    # NAMES (strings) without exported flags; treating every name as
+    # exported produced HIGH false positives on apps whose providers are
+    # all exported=false (MaxStore case). Only dict-shaped entries carry
+    # ground truth; for string-only manifests we downgrade to INFO and
+    # point analysts at `nightowl surface`.
     if manifest:
         def exported(items):
             out = []
+            undetermined = 0
             for it in items or []:
                 if isinstance(it, dict):
                     if it.get("exported") or it.get("exported_true"):
                         out.append(it.get("name", "?"))
                 elif isinstance(it, str):
-                    out.append(it)
-            return out
-        surface["exported_activities"] = exported(manifest.get("activities"))
-        surface["exported_services"] = exported(manifest.get("services"))
-        surface["exported_receivers"] = exported(manifest.get("receivers"))
-        surface["exported_providers"] = exported(manifest.get("providers"))
+                    undetermined += 1
+            return out, undetermined
 
-        n_export = sum(len(v) for v in surface.values())
+        for key, mkey in (("exported_activities", "activities"),
+                          ("exported_services", "services"),
+                          ("exported_receivers", "receivers"),
+                          ("exported_providers", "providers")):
+            surface[key], undet = exported(manifest.get(mkey))
+            surface.setdefault("undetermined", {})[mkey] = undet
+
+        n_export = sum(len(surface[k]) for k in
+                       ("exported_activities", "exported_services",
+                        "exported_receivers", "exported_providers"))
         if n_export:
             findings.append({
                 "category": "Attack Surface",
                 "severity": "MEDIUM" if n_export <= 4 else "HIGH",
                 "title": f"{n_export} exported components reachable by other apps",
                 "matches": n_export,
-                "evidence": sum(surface.values(), [])[:8],
+                "evidence": sum((surface[k] for k in surface
+                                 if k.startswith("exported_")), [])[:8],
             })
         if surface["exported_providers"]:
             findings.append({
@@ -120,6 +133,45 @@ def analyze_deep(txt, manifest=None):
                 "title": "Exported ContentProviders (query/injection surface)",
                 "matches": len(surface["exported_providers"]),
                 "evidence": surface["exported_providers"][:5],
+            })
+        # v8.1.1: prefer engine's parsed ground truth when available -
+        # components.exported_no_perm carries exact exported+unprotected set
+        if components and components.get("exported_no_perm"):
+            real = components["exported_no_perm"]
+            by_type = {}
+            for c in real:
+                by_type.setdefault(c.get("type", "?"), []).append(
+                    c.get("component", "?"))
+            n_real = len(real)
+            if n_real:
+                findings.append({
+                    "category": "Attack Surface",
+                    "severity": "MEDIUM" if n_real <= 4 else "HIGH",
+                    "title": f"{n_real} exported UNPROTECTED components "
+                             f"(decoded-manifest truth)",
+                    "matches": n_real,
+                    "evidence": [f"{c['type']}:{c['component']}"
+                                 for c in real[:8]],
+                })
+            for pi in components.get("provider_issues") or []:
+                findings.append({
+                    "category": "Attack Surface",
+                    "severity": "LOW",
+                    "title": f"Provider grantUriPermissions: "
+                             f"{pi.get('component','?').split('.')[-1]}",
+                    "detail": pi.get("issue", ""),
+                })
+        undet_total = sum(surface.get("undetermined", {}).values())
+        if undet_total and not surface["exported_providers"]:
+            findings.append({
+                "category": "Attack Surface",
+                "severity": "INFO",
+                "title": f"{undet_total} component(s) with undetermined "
+                         f"exported status",
+                "detail": "Binary manifest parse lacked exported flags - "
+                          "run `nightowl decompile` + `nightowl surface` "
+                          "for ground truth.",
+                "matches": undet_total,
             })
 
     # ── Deep links ────────────────────────────────────────────────────────
