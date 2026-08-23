@@ -84,6 +84,28 @@ def generate_pack(apk_path, package=None, components=None, providers=None,
         authority = name
         emit(pre + f'shell content query --uri content://{authority}/ 2>&1',
              f"provider_query:{name}")
+    # 5b) backup extraction attempt (wallet data exfil vector)
+    emit(pre + "shell bmgr enabled 2>&1", "backup_manager_enabled")
+    emit(pre + f"backup -nosystem -noapk -f backup_{pkg}.ab {pkg} 2>&1",
+         "backup_attempt", "confirm on device when prompted")
+    if not ps:
+        lines.append("sleep 5")
+    else:
+        lines.append("Start-Sleep -Seconds 5")
+    if not ps:
+        lines.append(f"ls -la backup_{pkg}.ab 2>/dev/null || "
+                     f"echo no-backup-file")
+    else:
+        lines.append(f"if (Test-Path backup_{pkg}.ab) {{ Get-Item "
+                     f"backup_{pkg}.ab | Select Length }} else {{ echo "
+                     f"'no-backup-file' }}")
+
+    # 5c) live network endpoints of the app
+    emit(pre + f"shell pidof {pkg}", "app_pid")
+    emit(pre + "shell cat /proc/net/tcp6 2>/dev/null", "live_tcp6")
+    emit(pre + "shell dumpsys netstats detail 2>/dev/null | head -40",
+         "netstats_head")
+
     # 6) logcat leakage window while app foregrounded
     emit(pre + "logcat -c", "logcat_clear")
     emit(pre + f"shell monkey -p {pkg} -c "
@@ -193,6 +215,20 @@ def ingest(results_json_path, base_report_path=None, out_path=None):
                 else "CONFIRMED-NOT-DEBUGGABLE", out[:160])
         elif key == "pkg_flags":
             add("pkg-flags", "INFO", out[:300])
+        elif key == "backup_attempt":
+            add("adb-backup-extraction",
+                "BLOCKED(requires-device-confirmation)" if "confirm" in low
+                else ("ATTEMPTED" if out.strip() else "NO-OP"),
+                out[:160])
+        elif key == "backup_manager_enabled":
+            add("backup-manager-enabled",
+                "ENABLED" if "true" in low else "disabled", out[:80])
+        elif key == "live_tcp6":
+            import re as _re2
+            remotes = _re2.findall(
+                r"[0-9A-F]{32}:([0-9A-F]{4})", str(out))
+            ports = sorted({int(p_, 16) for p_ in remotes})
+            add("live-remote-ports", str(ports[:12]) or "none", out[:120])
         elif key == "logcat_dump":
             import re as _re
             leaks = _re.findall(
