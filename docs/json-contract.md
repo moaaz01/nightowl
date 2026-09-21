@@ -56,14 +56,17 @@ Every finding record carries a `fingerprint`: `secrets[]`,
 |---|---|
 | Deterministic | SHA-256 — identical across runs, hosts, interpreters and NightOwl versions |
 | Root-cause stable | changing `confidence`, `severity`, `id` or a timestamp never changes it |
-| Cause-sensitive | different title, package or MASVS/category anchor ⇒ different fingerprint |
+| Cause-sensitive | different title or MASVS/category anchor ⇒ different fingerprint |
 | Idempotent | an existing fingerprint is never overwritten |
 | Total | attached at emission time; it can never fail a scan |
 
-Identity inputs are package + (title + MASVS/category anchor) for findings,
-and package + type + masked value (first 6 / last 4) for secrets. Volatile
-fields are never hashed, so `nightowl diff` and multi-run deduplication match
-on the same root cause.
+Identity inputs are title + MASVS/category anchor for findings, and type +
+masked value (first 6 / last 4) for secrets. Volatile fields are never
+hashed — and neither is the report's package name: a report covers exactly one
+APK, and a bare install has no `androguard`, so `info.package` would then be
+the placeholder `N/A (install androguard)` and the same finding would hash
+differently depending on how NightOwl was installed. Consumers that need a
+cross-app key join on `(info.package, fingerprint)`.
 
 ```bash
 nightowl full a.apk --json | jq '[.vulns[].fingerprint]'
