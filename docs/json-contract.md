@@ -60,6 +60,12 @@ Every finding record carries a `fingerprint`: `secrets[]`,
 | Idempotent | an existing fingerprint is never overwritten |
 | Total | attached at emission time; it can never fail a scan |
 
+Fingerprinted lists: `secrets`, `secrets_filtered`, `vulns`, `findings`,
+`weaknesses`, `vulnerable`, `issues`, `components.exported_no_perm` and
+`components.provider_issues` (recursively, at any depth). Inventory lists --
+`authmap.flows` and `sca.sbom.components` -- describe what was observed rather
+than a fault, so they are keyed by their own fields instead.
+
 Identity inputs are title + MASVS/category anchor for findings, and type +
 masked value (first 6 / last 4) for secrets. Volatile fields are never
 hashed — and neither is the report's package name: a report covers exactly one

@@ -33,6 +33,14 @@ def sample_payload() -> dict:
         "authmap": {"weaknesses": [{"severity": "CRITICAL",
                                     "title": "Cleartext login",
                                     "masvs": "MASVS-NETWORK-1"}]},
+        "components": {
+            "exported_no_perm": [{"component": "com.example.app.MainActivity",
+                                  "type": "activity", "exported": "true",
+                                  "has_permission": "False"}],
+            "provider_issues": [{"component": "androidx.core.FileProvider",
+                                 "issue": "Provider grants URI permissions "
+                                          "without read/write protection"}],
+        },
         "arch": {"frameworks": ["okhttp"]},
     }
 
@@ -71,6 +79,19 @@ class TestAttachFingerprints(unittest.TestCase):
         self.assertIn("fingerprint", p["vulns"][0])
         self.assertIn("fingerprint", p["deepscan"]["findings"][0])
         self.assertIn("fingerprint", p["authmap"]["weaknesses"][0])
+        self.assertIn("fingerprint", p["components"]["exported_no_perm"][0])
+        self.assertIn("fingerprint", p["components"]["provider_issues"][0])
+
+    def test_issue_text_is_part_of_provider_identity(self):
+        # Two different faults on the same component must not collide.
+        a = attach_fingerprints(sample_payload())
+        b = sample_payload()
+        b["components"]["provider_issues"][0]["issue"] = (
+            "Provider is exported and world-readable")
+        attach_fingerprints(b)
+        self.assertNotEqual(
+            a["components"]["provider_issues"][0]["fingerprint"],
+            b["components"]["provider_issues"][0]["fingerprint"])
 
     def test_idempotent_and_never_overwrites(self):
         p = attach_fingerprints(sample_payload())

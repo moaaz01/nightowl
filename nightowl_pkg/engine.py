@@ -48,6 +48,9 @@ warnings.filterwarnings('ignore', message='.*Requested API level.*')
 # name: `core.fingerprint` / `core.attach_fingerprints` exist automatically
 # without an import cycle.
 
+# Security-relevant record lists that carry a finding identity. Inventory
+# lists are deliberately absent -- `authmap.flows` and `sca.sbom.components`
+# describe what was observed, not a fault, and are keyed by their own fields.
 _FP_LIST_KEYS = {
     "secrets": "secret",
     "secrets_filtered": "secret",
@@ -56,6 +59,8 @@ _FP_LIST_KEYS = {
     "weaknesses": "finding",
     "vulnerable": "finding",
     "issues": "finding",
+    "exported_no_perm": "finding",
+    "provider_issues": "finding",
 }
 
 
@@ -88,7 +93,7 @@ def _fp_record(kind: str, item: dict) -> str:
         return fingerprint("secret", stype, masked)
     title = item.get("title") or item.get("component") or ""
     anchor = (item.get("masvs") or item.get("cat") or item.get("category")
-              or item.get("advisory") or "")
+              or item.get("advisory") or item.get("issue") or "")
     if not title and not anchor:
         return ""
     return fingerprint(kind, title, anchor)

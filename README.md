@@ -20,7 +20,7 @@ Privacy · SCA/SBOM · Dynamic Lab · Report Diffing · MCP Agent Bridge**
 [![Python](https://img.shields.io/badge/python-3.12%2B-green)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![Apache-2.0](https://img.shields.io/badge/third--party-Apache--2.0-blue)](THIRD-PARTY-NOTICES.md)
-[![Tests](https://img.shields.io/badge/tests-140%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen)](#testing)
 [![MCP](https://img.shields.io/badge/MCP-compatible-blue)](#ai-agent-integration)
 [![OWASP](https://img.shields.io/badge/MASVS%2FMASTG-aligned-orange)](#masvs-alignment)
 
@@ -316,14 +316,14 @@ nightowl/
 ├── nightowl_pkg/dragonjar_data/ # Semgrep rules, detector catalog, profiles
 ├── skills/nightowl/SKILL.md    # AI-agent skill definition
 ├── THIRD-PARTY-NOTICES.md      # Apache-2.0 provenance for bundled files
-└── tests/                      # 140 tests (unit + integration)
+└── tests/                      # 141 tests (unit + integration)
 ```
 
 ## Testing
 
 ```bash
 python -m pytest tests/ -q
-# 140 passing — validators, billing, authmap, deepscan, hardening, privacy,
+# 141 passing — validators, billing, authmap, deepscan, hardening, privacy,
 # SCA, diff, report engine, MCP protocol, legacy engine compatibility
 ```
 
