@@ -345,7 +345,7 @@ def cmd_authmap(apk_path: str, analyzer=None, json_out=False):
     amap["access_points"] = access
 
     if json_out:
-        nw.attach_fingerprints(amap, az.d.get("info", {}).get("package"))
+        nw.attach_fingerprints(amap)
         print(json.dumps(amap, indent=2, ensure_ascii=False))
         return amap
 

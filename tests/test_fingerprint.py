@@ -19,7 +19,7 @@ from nightowl_pkg.core import attach_fingerprints, fingerprint
 FP_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$")
 
 
-def sample_payload():
+def sample_payload() -> dict:
     return {
         "info": {"package": "com.example.app"},
         "secrets": [{"type": "AWS Access Key", "value": "AKIAABCDEFGHIJKLMNOP",
@@ -33,6 +33,14 @@ def sample_payload():
         "authmap": {"weaknesses": [{"severity": "CRITICAL",
                                     "title": "Cleartext login",
                                     "masvs": "MASVS-NETWORK-1"}]},
+        "components": {
+            "exported_no_perm": [{"component": "com.example.app.MainActivity",
+                                  "type": "activity", "exported": "true",
+                                  "has_permission": "False"}],
+            "provider_issues": [{"component": "androidx.core.FileProvider",
+                                 "issue": "Provider grants URI permissions "
+                                          "without read/write protection"}],
+        },
         "arch": {"frameworks": ["okhttp"]},
     }
 
@@ -71,6 +79,19 @@ class TestAttachFingerprints(unittest.TestCase):
         self.assertIn("fingerprint", p["vulns"][0])
         self.assertIn("fingerprint", p["deepscan"]["findings"][0])
         self.assertIn("fingerprint", p["authmap"]["weaknesses"][0])
+        self.assertIn("fingerprint", p["components"]["exported_no_perm"][0])
+        self.assertIn("fingerprint", p["components"]["provider_issues"][0])
+
+    def test_issue_text_is_part_of_provider_identity(self):
+        # Two different faults on the same component must not collide.
+        a = attach_fingerprints(sample_payload())
+        b = sample_payload()
+        b["components"]["provider_issues"][0]["issue"] = (
+            "Provider is exported and world-readable")
+        attach_fingerprints(b)
+        self.assertNotEqual(
+            a["components"]["provider_issues"][0]["fingerprint"],
+            b["components"]["provider_issues"][0]["fingerprint"])
 
     def test_idempotent_and_never_overwrites(self):
         p = attach_fingerprints(sample_payload())
@@ -101,17 +122,45 @@ class TestAttachFingerprints(unittest.TestCase):
         attach_fingerprints(b)
         self.assertNotEqual(a["vulns"][0]["fingerprint"], b["vulns"][0]["fingerprint"])
 
-    def test_different_package_gets_different_fingerprint(self):
+    def test_package_is_never_part_of_the_identity(self):
+        """`info.package` differs between a bare and a ``[full]`` install
+        (no androguard ⇒ placeholder), so it must never reach the hash."""
         a = attach_fingerprints(sample_payload())
         b = sample_payload()
         b["info"]["package"] = "com.other.app"
         attach_fingerprints(b)
-        self.assertNotEqual(a["vulns"][0]["fingerprint"], b["vulns"][0]["fingerprint"])
+        self.assertEqual(a["vulns"][0]["fingerprint"], b["vulns"][0]["fingerprint"])
+        self.assertEqual(a["secrets"][0]["fingerprint"], b["secrets"][0]["fingerprint"])
 
-    def test_explicit_package_argument_wins(self):
-        p = {"findings": [{"title": "X"}]}
-        attach_fingerprints(p, "com.explicit.app")
-        self.assertRegex(p["findings"][0]["fingerprint"], FP_RE)
+    def test_real_secret_record_is_stable_across_install_modes(self):
+        """Regression: a real ``com.studyai.app`` scan produced one
+        fingerprint in a ``[full]`` install and a different one in a bare
+        install, because the derived ``context`` and the package placeholder
+        differed. Record shape copied from that scan."""
+        def scan(pkg, context, conf, verdict) -> dict:
+            payload = {"info": {"package": pkg},
+                       "secrets": [{
+                           "type": "Google OAuth",
+                           "value": "1003622846245-abcdefghijklmnopqrstuvwxyz0123456789.apps",
+                           "raw_len": 66,
+                           "context": context,
+                           "confidence": conf,
+                           "verdict": verdict,
+                           "validation": ["high entropy (4.81 bits/char)"],
+                           "description": "Google OAuth client secret.",
+                           "risk": "HIGH",
+                           "source": "DEX strings",
+                       }]}
+            return attach_fingerprints(payload)
+
+        full = scan("com.studyai.app", "PostSignInFlowRequired\nX\nNn V(C",
+                    65.0, "LIKELY")
+        bare = scan("N/A (install androguard)",
+                    "*Lcom/google/android/gms/internal/base/zaj;\nX\nLs0/m;",
+                    30.0, "SUSPECTED")
+        self.assertRegex(full["secrets"][0]["fingerprint"], FP_RE)
+        self.assertEqual(full["secrets"][0]["fingerprint"],
+                         bare["secrets"][0]["fingerprint"])
 
     def test_total_on_hostile_payloads(self):
         for hostile in (None, 42, "text", [], {}, {"secrets": "not-a-list"},

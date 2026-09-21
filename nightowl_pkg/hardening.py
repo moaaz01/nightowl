@@ -165,7 +165,7 @@ def cmd_hardening(apk_path: str, analyzer=None, json_out=False):
     )
     if json_out:
         import json as _json
-        nw.attach_fingerprints(rep, az.d.get("info", {}).get("package"))
+        nw.attach_fingerprints(rep)
         print(_json.dumps(rep, indent=2, ensure_ascii=False))
         return rep
 

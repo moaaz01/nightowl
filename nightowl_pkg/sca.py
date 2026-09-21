@@ -215,7 +215,7 @@ def cmd_sca(apk_path: str, analyzer=None, json_out=False, save_sbom=None):
         p.write_text(_json.dumps(rep["sbom"], indent=2))
     if json_out:
         import json as _json
-        nw.attach_fingerprints(rep, az.d.get("info", {}).get("package"))
+        nw.attach_fingerprints(rep)
         print(_json.dumps(rep, indent=2, ensure_ascii=False))
         return rep
 
