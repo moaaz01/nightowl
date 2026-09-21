@@ -35,11 +35,14 @@ warnings.filterwarnings('ignore', message='.*Requested API level.*')
 #
 # A fingerprint must survive every attribute that can change without the
 # underlying root cause changing: confidence, severity, timestamps, workspace
-# paths and rule ordering are therefore NEVER hashed into it. Identity is
-# package + rule/title + MASVS/category anchor (or, for secrets, type +
-# masked value), so two runs of the same APK — and two builds that keep the
-# same flaw — produce the same fingerprint, while a moved/changed finding
-# gets a new one.
+# paths, rule ordering and the report's package name are therefore NEVER
+# hashed into it. Identity is rule/title + MASVS/category anchor (or, for
+# secrets, type + masked value), so two runs of the same APK, two builds that
+# keep the same flaw, and a bare install (no androguard, so info.package is
+# the placeholder "N/A (install androguard)") all produce the same
+# fingerprint, while a changed finding gets a new one. A report covers exactly
+# one APK and already carries info.package, so a consumer that needs a
+# cross-app key joins on (info.package, fingerprint).
 #
 # Defined here (not in core.py) because core re-exports every public engine
 # name: `core.fingerprint` / `core.attach_fingerprints` exist automatically
@@ -67,53 +70,56 @@ def fingerprint(kind: str, *parts) -> str:
     return f"{kind}:{hashlib.sha256(material.encode('utf-8')).hexdigest()[:16]}"
 
 
-def _fp_record(kind: str, item: dict, package: str) -> str:
-    """Stable identity for one finding record (``""`` when it has no identity)."""
+def _fp_record(kind: str, item: dict) -> str:
+    """Stable identity for one finding record (``""`` when it has no identity).
+
+    Only identity-defining fields take part: ``type`` + masked value for
+    secrets, title + MASVS/category anchor otherwise. Deliberately excludes
+    the package name — see the contract note above — and every derived field
+    (context, confidence, verdict, validation, description), which a bare and
+    a ``[full]`` install do not reproduce identically.
+    """
     if kind == "secret":
         val = str(item.get("value") or "")
         stype = item.get("type")
         if not val and not stype:
             return ""          # no identity to hash — skip rather than collide
         masked = f"{val[:6]}|{val[-4:]}" if len(val) > 10 else val
-        return fingerprint("secret", package, stype, masked)
+        return fingerprint("secret", stype, masked)
     title = item.get("title") or item.get("component") or ""
     anchor = (item.get("masvs") or item.get("cat") or item.get("category")
               or item.get("advisory") or "")
     if not title and not anchor:
         return ""
-    return fingerprint(kind, package, title, anchor)
+    return fingerprint(kind, title, anchor)
 
 
-def attach_fingerprints(payload, package=None):
+def attach_fingerprints(payload):
     """Add ``fingerprint`` to every recognized finding record, in place.
 
     Idempotent (an existing fingerprint is never overwritten), recursive, and
     total: it never raises and never mutates anything else, so wiring it into
-    an emission path can never fail a scan.
+    an emission path can never fail a scan. Takes only the payload: identity
+    comes from each record's own fields, so there is no environment-dependent
+    value (package name, workspace path) to thread through.
     """
     try:
         if isinstance(payload, dict):
-            if package is None:
-                info = payload.get("info")
-                if isinstance(info, dict):
-                    package = info.get("package")
-                package = package or payload.get("package") or ""
-            package = str(package or "")
             for key in list(payload):
                 val = payload[key]
                 kind = _FP_LIST_KEYS.get(key)
                 if kind and isinstance(val, list):
                     for item in val:
                         if isinstance(item, dict) and "fingerprint" not in item:
-                            fp = _fp_record(kind, item, package)
+                            fp = _fp_record(kind, item)
                             if fp:
                                 item["fingerprint"] = fp
                 elif isinstance(val, (dict, list)):
-                    attach_fingerprints(val, package)
+                    attach_fingerprints(val)
         elif isinstance(payload, list):
             for item in payload:
                 if isinstance(item, (dict, list)):
-                    attach_fingerprints(item, package)
+                    attach_fingerprints(item)
     except Exception:
         pass  # fingerprints are additive metadata — never fail the scan
     return payload
