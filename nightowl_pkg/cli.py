@@ -188,6 +188,7 @@ def _flush_partial_report(signum=None, frame=None):
             out = Path(os.environ.get("NIGHTOWL_HOME") or Path.cwd())                 / "workspace" / "reports"
             out.mkdir(parents=True, exist_ok=True)
             f = out / f"partial-{Path(az.path).stem}-{datetime.now():%Y%m%d-%H%M%S}.json"
+            nw.attach_fingerprints(az.d)
             f.write_text(json.dumps(az.d, indent=2, ensure_ascii=False,
                                     default=str))
             print(f"\n[!] Interrupted — partial report flushed: {f}")
@@ -634,6 +635,7 @@ def main(argv=None):
                               f"{s['value'][:50]} ({'; '.join(s['validation'][:2])})")
 
         if json_mode and cmd != "apis":
+            nw.attach_fingerprints(az.d)
             print(json.dumps(az.d, indent=2, ensure_ascii=False))
         else:
             az.render("full" if cmd not in section_map else cmd)
@@ -804,6 +806,7 @@ def _save_report(az, cmd, apk_path):
     name = Path(apk_path).stem
     ts = __import__("datetime").datetime.now().strftime("%Y%m%d-%H%M%S")
     f = reports_dir / f"{name}-{cmd}-{ts}.json"
+    nw.attach_fingerprints(az.d)
     f.write_text(json.dumps(az.d, indent=2, ensure_ascii=False))
     if RICH:
         con.print(f"[dim]Report saved: {f}[/]")

@@ -42,6 +42,33 @@ should ignore unknown keys.
 }
 ```
 
+## `fingerprint` — stable finding identity (additive)
+
+Every finding record carries a `fingerprint`: `secrets[]`,
+`secrets_filtered[]`, `vulns[]`, any `findings[]`, `authmap.weaknesses[]`,
+`sca.vulnerable[]` and `security.issues[]`.
+
+```jsonc
+"fingerprint": "finding:8f21c0a4b77e19d5"   // <kind>:<16 hex sha256>
+```
+
+| Guarantee | Meaning |
+|---|---|
+| Deterministic | SHA-256 — identical across runs, hosts, interpreters and NightOwl versions |
+| Root-cause stable | changing `confidence`, `severity`, `id` or a timestamp never changes it |
+| Cause-sensitive | different title, package or MASVS/category anchor ⇒ different fingerprint |
+| Idempotent | an existing fingerprint is never overwritten |
+| Total | attached at emission time; it can never fail a scan |
+
+Identity inputs are package + (title + MASVS/category anchor) for findings,
+and package + type + masked value (first 6 / last 4) for secrets. Volatile
+fields are never hashed, so `nightowl diff` and multi-run deduplication match
+on the same root cause.
+
+```bash
+nightowl full a.apk --json | jq '[.vulns[].fingerprint]'
+```
+
 ## secrets (validated) — the core contract
 
 ```jsonc

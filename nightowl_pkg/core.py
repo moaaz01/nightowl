@@ -21,6 +21,11 @@ for _attr in dir(_nw):
     ):
         globals()[_attr] = getattr(_nw, _attr)
 
+# Explicit re-exports for static analyzers and IDEs: the dynamic loop above is
+# invisible to Pyright/ruff --select, so name them outright.
+fingerprint = _nw.fingerprint
+attach_fingerprints = _nw.attach_fingerprints
+
 # ── Path resolution -----------------------------------------------------------
 # ROOT  : repo/checkout root (works in git clones and source trees)
 # DATA_DIR: where runtime artifacts (reports, bypass scripts, captures) go.
