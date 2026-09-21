@@ -23,6 +23,7 @@ workspace/reports/*.md
 workspace/decompiled/
 workspace/analysis/
 workspace/logs/
+workspace/bypass/
 
 # APKs & binaries (user drops targets/)
 targets/*.apk

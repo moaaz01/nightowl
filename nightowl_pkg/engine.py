@@ -28,6 +28,97 @@ warnings.filterwarnings('ignore', message='.*API level.*', category=UserWarning)
 warnings.filterwarnings('ignore', message='.*Requested API level.*')
 
 # ═══════════════════════════════════════════════════════════════════════
+# FINDING FINGERPRINTS — stable identities for diff / dedupe / verification
+# ═══════════════════════════════════════════════════════════════════════
+# Contract note: `fingerprint` is additive-only, so consumers that predate it
+# simply ignore it (see docs/json-contract.md).
+#
+# A fingerprint must survive every attribute that can change without the
+# underlying root cause changing: confidence, severity, timestamps, workspace
+# paths and rule ordering are therefore NEVER hashed into it. Identity is
+# package + rule/title + MASVS/category anchor (or, for secrets, type +
+# masked value), so two runs of the same APK — and two builds that keep the
+# same flaw — produce the same fingerprint, while a moved/changed finding
+# gets a new one.
+#
+# Defined here (not in core.py) because core re-exports every public engine
+# name: `core.fingerprint` / `core.attach_fingerprints` exist automatically
+# without an import cycle.
+
+_FP_LIST_KEYS = {
+    "secrets": "secret",
+    "secrets_filtered": "secret",
+    "vulns": "vuln",
+    "findings": "finding",
+    "weaknesses": "finding",
+    "vulnerable": "finding",
+    "issues": "finding",
+}
+
+
+def fingerprint(kind: str, *parts) -> str:
+    """Return ``<kind>:<16 hex sha256>`` — a deterministic stable identity.
+
+    Uses SHA-256 rather than Python's ``hash`` so the value is identical
+    across runs, hosts, interpreters and NightOwl versions. Never pass
+    volatile material (confidence, severity, time, paths) here.
+    """
+    material = chr(0x1F).join(str(p) for p in (kind,) + parts if p not in (None, ""))
+    return f"{kind}:{hashlib.sha256(material.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _fp_record(kind: str, item: dict, package: str) -> str:
+    """Stable identity for one finding record (``""`` when it has no identity)."""
+    if kind == "secret":
+        val = str(item.get("value") or "")
+        stype = item.get("type")
+        if not val and not stype:
+            return ""          # no identity to hash — skip rather than collide
+        masked = f"{val[:6]}|{val[-4:]}" if len(val) > 10 else val
+        return fingerprint("secret", package, stype, masked)
+    title = item.get("title") or item.get("component") or ""
+    anchor = (item.get("masvs") or item.get("cat") or item.get("category")
+              or item.get("advisory") or "")
+    if not title and not anchor:
+        return ""
+    return fingerprint(kind, package, title, anchor)
+
+
+def attach_fingerprints(payload, package=None):
+    """Add ``fingerprint`` to every recognized finding record, in place.
+
+    Idempotent (an existing fingerprint is never overwritten), recursive, and
+    total: it never raises and never mutates anything else, so wiring it into
+    an emission path can never fail a scan.
+    """
+    try:
+        if isinstance(payload, dict):
+            if package is None:
+                info = payload.get("info")
+                if isinstance(info, dict):
+                    package = info.get("package")
+                package = package or payload.get("package") or ""
+            package = str(package or "")
+            for key in list(payload):
+                val = payload[key]
+                kind = _FP_LIST_KEYS.get(key)
+                if kind and isinstance(val, list):
+                    for item in val:
+                        if isinstance(item, dict) and "fingerprint" not in item:
+                            fp = _fp_record(kind, item, package)
+                            if fp:
+                                item["fingerprint"] = fp
+                elif isinstance(val, (dict, list)):
+                    attach_fingerprints(val, package)
+        elif isinstance(payload, list):
+            for item in payload:
+                if isinstance(item, (dict, list)):
+                    attach_fingerprints(item, package)
+    except Exception:
+        pass  # fingerprints are additive metadata — never fail the scan
+    return payload
+
+# ═══════════════════════════════════════════════════════════════════════
 # RICH TUI  (graceful fallback when not installed)
 # ═══════════════════════════════════════════════════════════════════════
 try:
@@ -2171,6 +2262,7 @@ class NightOwlAnalyzer:
         ts = datetime.now().strftime('%Y%m%d_%H%M%S')
         base = Path(out_dir) / f"{self.path.stem}_{ts}"
         jp = base.with_suffix('.json')
+        attach_fingerprints(self.d)
         jp.write_text(json.dumps(self.d, indent=2, ensure_ascii=False), encoding='utf-8')
         mp = base.with_suffix('.md')
         mp.write_text(self._mk_md(), encoding='utf-8')

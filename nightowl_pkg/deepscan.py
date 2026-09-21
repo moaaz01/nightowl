@@ -279,6 +279,7 @@ def cmd_deepscan(apk_path: str, analyzer=None, json_out=False):
     rep = attach_cvss(analyze_deep(az.txt, manifest))
 
     if json_out:
+        nw.attach_fingerprints(rep, az.d.get("info", {}).get("package"))
         print(json.dumps(rep, indent=2, ensure_ascii=False))
         return rep
 

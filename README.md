@@ -19,7 +19,8 @@ Privacy · SCA/SBOM · Dynamic Lab · Report Diffing · MCP Agent Bridge**
 
 [![Python](https://img.shields.io/badge/python-3.12%2B-green)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-103%20passing-brightgreen)](#testing)
+[![Apache-2.0](https://img.shields.io/badge/third--party-Apache--2.0-blue)](THIRD-PARTY-NOTICES.md)
+[![Tests](https://img.shields.io/badge/tests-140%20passing-brightgreen)](#testing)
 [![MCP](https://img.shields.io/badge/MCP-compatible-blue)](#ai-agent-integration)
 [![OWASP](https://img.shields.io/badge/MASVS%2FMASTG-aligned-orange)](#masvs-alignment)
 
@@ -196,6 +197,10 @@ NIGHTOWL_CAPTURE_HOSTS=api.target.com mitmdump -s ...   # scope to target hosts
 
 ### DragonJAR modules
 
+> Derived from [DragonJAR's Android Pentesting Skill](https://github.com/DragonJAR/Android-Pentesting-Skill)
+> (Apache-2.0, © DragonJAR SAS) — file-by-file provenance in
+> [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ```bash
 ./nightowl static-audit app.apk    [--reuse-jadx DIR]
 ./nightowl semgrep app.apk         # OWASP MASTG compliance rules
@@ -308,16 +313,17 @@ nightowl/
 │   ├── preflight.py            # Dependency validation
 │   └── wizard.py               # Interactive menu
 ├── frida-scripts/              # api-interceptor, ssl-bypass, memory-dump…
-├── scripts-dragonjar/          # Semgrep rules, detector catalog, profiles
+├── nightowl_pkg/dragonjar_data/ # Semgrep rules, detector catalog, profiles
 ├── skills/nightowl/SKILL.md    # AI-agent skill definition
-└── tests/                      # 103 tests (unit + integration)
+├── THIRD-PARTY-NOTICES.md      # Apache-2.0 provenance for bundled files
+└── tests/                      # 140 tests (unit + integration)
 ```
 
 ## Testing
 
 ```bash
 python -m pytest tests/ -q
-# 103 passing — validators, billing, authmap, deepscan, hardening, privacy,
+# 140 passing — validators, billing, authmap, deepscan, hardening, privacy,
 # SCA, diff, report engine, MCP protocol, legacy engine compatibility
 ```
 
@@ -339,7 +345,14 @@ NightOwl against third-party applications without authorization.
 
 ## License
 
-[MIT](LICENSE) — free for authorized security testing and research.
+NightOwl's own code is [MIT](LICENSE) — free for authorized security testing
+and research.
+
+Files under `nightowl_pkg/dragonjar_data/` are derived from
+[DragonJAR's Android Pentesting Skill](https://github.com/DragonJAR/Android-Pentesting-Skill)
+(© DragonJAR SAS) and remain under the Apache License 2.0
+([full text](licenses/Apache-2.0.txt)). Per-file provenance and modification
+status: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 <div align="center">
 <i>Built for security researchers who demand depth — and truth in results.</i>

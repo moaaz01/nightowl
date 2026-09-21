@@ -426,6 +426,7 @@ def cmd_billing(apk_path: str, analyzer=None, json_out=False):
     rep["verification_script"] = str(script)
 
     if json_out:
+        nw.attach_fingerprints(rep, pkg)
         print(json.dumps(rep, indent=2, ensure_ascii=False))
         return rep
 
