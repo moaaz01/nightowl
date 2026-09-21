@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]   # >=77: PEP 639 license-files
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,12 @@ name = "nightowl-security"
 dynamic = ["version"]
 description = "NightOwl - Unified Android Security Analysis Platform: validated secrets, auth mapping, subscription enforcement, packer fingerprinting, privacy audit, SCA/SBOM, dynamic lab, MCP agent bridge"
 readme = "README.md"
-license = { text = "MIT AND Apache-2.0" }
+# SPDX expression: MIT for NightOwl's own code, Apache-2.0 for the
+# DragonJAR-derived files listed in THIRD-PARTY-NOTICES.md.
+license = "MIT AND Apache-2.0"
+# PEP 639: shipped inside dist-info/licenses/ so pip-installed copies of the
+# package carry the Apache text and the provenance notice (Apache-2.0 §4).
+license-files = ["LICENSE", "THIRD-PARTY-NOTICES.md", "licenses/*.txt"]
 authors = [{ name = "moaaz01" }]
 requires-python = ">=3.12"
 keywords = [
@@ -18,8 +23,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Information Technology",
-    "License :: OSI Approved :: MIT License",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
@@ -64,7 +67,7 @@ nightowl_pkg = [
     "dragonjar_data/**/*.yml",
     "dragonjar_data/**/*.sh",
     "dragonjar_data/**/*.py",
-    "dragonjar_data/.semgrepignore",
+    "dragonjar_data/**/.semgrepignore",
 ]
 
 [tool.ruff]
