@@ -54,6 +54,18 @@ jobs:
       - name: Scan NightOwl with its own medicine
         run: semgrep scan --config p/ci --severity ERROR --error || true
 
+  third-party-notices:
+    name: third-party notices
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Apache-2.0 §4 disclosure: every redistributed file must be listed.
+      - name: Every redistributed file must be disclosed
+        run: python scripts/check_third_party.py
+
   smoke-cli:
     name: CLI smoke (pip install -> scan)
     runs-on: ubuntu-latest

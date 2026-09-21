@@ -7,7 +7,7 @@ name = "nightowl-security"
 dynamic = ["version"]
 description = "NightOwl - Unified Android Security Analysis Platform: validated secrets, auth mapping, subscription enforcement, packer fingerprinting, privacy audit, SCA/SBOM, dynamic lab, MCP agent bridge"
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "MIT AND Apache-2.0" }
 authors = [{ name = "moaaz01" }]
 requires-python = ">=3.12"
 keywords = [
@@ -19,6 +19,7 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
